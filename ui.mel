@@ -1,0 +1,43 @@
+global proc int createLSystemUI()
+{
+	global string $gMainWindow;
+	setParent $gMainWindow;
+	menu -label "LiuSalon" myMenu;
+	setParent -menu myMenu;
+	menuItem -label "Create hair model..." -command "createHairModel";
+	menuItem -label "Assign hair shader..." -command "assignHairShader";
+	return true;
+}
+
+global proc int deleteLSystemUI()
+{
+	deleteUI -menu myMenu;
+	return true;
+}
+
+
+
+global proc browseHairFile()
+{
+    string $filePath[] = `fileDialog2 -fileMode 1 -caption "Browse for hair files"`;
+    if (`size($filePath)`)
+    {
+        $fileId = `fopen $filePath[0] "r"`;
+        string $filecontent;
+		$grammar = `fread $fileId $grammar`;
+        scrollField -edit -tx $grammar myScrollField;
+    }
+}
+
+
+
+ global proc createHairModel()
+{
+   //
+}
+
+ global proc assignHairShader()
+{
+   //
+}
+
