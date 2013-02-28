@@ -198,10 +198,14 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="HairModelNode.cpp" />
     <ClCompile Include="LiuSalonCmd.cpp" />
+    <ClCompile Include="PluginMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cyHairFile.h" />
+    <ClInclude Include="HairModelNode.h" />
+    <ClInclude Include="LiuSalonCmd.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

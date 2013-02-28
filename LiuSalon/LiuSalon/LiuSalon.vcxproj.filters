@@ -26,9 +26,21 @@
     <ClCompile Include="LiuSalonCmd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PluginMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HairModelNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cyHairFile.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LiuSalonCmd.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HairModelNode.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
