@@ -17,28 +17,27 @@
 #include <list>
 
 #include "LiuSalonCmd.h"
-//#include "LiuSalonNode.h"
+#include "HairModelNode.h"
 
 MStatus initializePlugin( MObject obj )
 {
     MStatus   status = MStatus::kSuccess;
     MFnPlugin plugin( obj, "LiuSalon", "1.0", "Any");
 
-	// load external functions & ui
-	MGlobal::executeCommand("source \"" + plugin.loadPath() + "/functions.mel\"");
-    MGlobal::executeCommand("source \"" + plugin.loadPath() + "/ui.mel\"");
-	status = plugin.registerUI("createLSystemUI", "deleteLSystemUI");
+	// load external i
+    //MGlobal::executeCommand("source \"" + plugin.loadPath() + "/ui.mel\"");
+	//status = plugin.registerUI("createLiuSalonUI", "deleteLiuSalonUI");
 
 	// Register Command
-	status = plugin.registerCommand( "LSystemCmd", LSystemCmd::creator, LSystemCmd::newSyntax );
+	status = plugin.registerCommand( "LiuSalonCmd", LiuSalonCmd::creator, LiuSalonCmd::newSyntax );
     if (!status) {
         status.perror("registerCommand");
         return status;
     }
 
 	// Register Node
-	status = plugin.registerNode("LSystemNode", LSystemNode::id,
-								  LSystemNode::creator, LSystemNode::initialize);
+	status = plugin.registerNode("HairModelNode", HairModelNode::id,
+								  HairModelNode::creator, HairModelNode::initialize);
 	if (!status) {
 		status.perror("registerNode");
 		return status;
@@ -53,13 +52,13 @@ MStatus uninitializePlugin( MObject obj)
     MStatus   status = MStatus::kSuccess;
     MFnPlugin plugin( obj );
 
-    status = plugin.deregisterCommand( "LSystemCmd" );
+    status = plugin.deregisterCommand( "LiuSalonCmd" );
     if (!status) {
 	    status.perror("deregisterCommand");
 	    return status;
     }
 
-	status = plugin.deregisterNode(LSystemNode::id);
+	status = plugin.deregisterNode(HairModelNode::id);
 	if (!status) {
 		status.perror("deregisterNode");
 		return status;

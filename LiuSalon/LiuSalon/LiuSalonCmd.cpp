@@ -1,11 +1,14 @@
 #include "LiuSalonCmd.h"
+#include "cyHairFile.h"
 
-#include <maya/MSimple.h>
-
-//DeclareSimpleCommand( LiuSalon, "", "2012");
+#include <maya/MArgDatabase.h>
+#include <list>
+#include <sstream>
 
 // command line args
-// TODO: fill in
+const char *strandsFlag = "-s", *strandsLongFlag = "-strands";
+const char *pointsFlag = "-p", *pointsLongFlag = "-points";
+const char *lengthFlag = "-l", *lengthLongFlag = "-length";
 
 LiuSalonCmd::LiuSalonCmd() : MPxCommand()
 {
@@ -19,7 +22,9 @@ MSyntax LiuSalonCmd::newSyntax()
 {
     MSyntax syntax;
 
-    // TODO: fill in
+    syntax.addFlag(strandsFlag, strandsLongFlag, MSyntax::kLong);
+	syntax.addFlag(pointsFlag, pointsLongFlag, MSyntax::kLong);
+	syntax.addFlag(lengthFlag, lengthLongFlag, MSyntax::kDouble);
 
 	return syntax;
 }
@@ -27,7 +32,29 @@ MSyntax LiuSalonCmd::newSyntax()
 MStatus LiuSalonCmd::doIt( const MArgList& args )
 {
 	MStatus stat = MS::kSuccess;
-	//setResult( "LiuSalon command executed!\n" );
+	setResult( "LiuSalon command executed!\n" );
 
+	// create cyHairFile object for storing hair data
+	cyHairFile* h = new cyHairFile();
+
+	int numStrands;
+	int numPoints;
+	double hairLength;
+	MArgDatabase argData(syntax(), args);
+
+    if(argData.isFlagSet(strandsFlag)) {
+		argData.getFlagArgument(strandsFlag, 0, numStrands);
+		h->SetHairCount(numStrands);
+	}
+    if(argData.isFlagSet(pointsFlag)) {
+		argData.getFlagArgument(pointsFlag, 0, numPoints);
+		h->SetPointCount(numPoints);
+	}
+    if(argData.isFlagSet(lengthFlag))
+		argData.getFlagArgument(lengthFlag, 0, hairLength);
+
+	// now create the hair
+
+    return MStatus::kSuccess;
 	return stat;
 }
