@@ -86,6 +86,5 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 		currPtNum ++;
 	}
 
-    return MStatus::kSuccess;
-	return stat;
+	return MStatus::kSuccess;
 }

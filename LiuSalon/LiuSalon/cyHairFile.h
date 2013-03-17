@@ -146,6 +146,35 @@ public:
 			colors = new float[ header.point_count*3 ];
 		}
 	}
+	
+	/// LOOK: adding new functions for setting array counts
+
+	// creates the points array based on count
+	void CreatePoints(int count)
+	{
+		SetPointCount(count);
+		if (!points) {
+			points = new float[ header.point_count*3 ];
+		}
+		if (!thickness) {
+			thickness = new float[ header.point_count ];
+		}
+		if (!transparency) {
+			transparency = new float[ header.point_count ];
+		}
+		if (!colors) {
+			colors = new float[ header.point_count*3 ];
+		}
+	}
+
+	// creates segments array based on count
+	void CreateHair(int count)
+	{
+		header.hair_count = count;
+		if (!segments) {
+			segments = new unsigned short[ header.hair_count ];
+		}
+	}
 
 	/// Use this function to allocate/delete arrays.
 	/// Before you call this method set hair count and point count.

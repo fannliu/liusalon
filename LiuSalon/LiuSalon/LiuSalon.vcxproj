@@ -146,7 +146,7 @@
     <Link>
       <AdditionalDependencies>Foundation.lib;OpenMaya.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>D:\ProgramFiles\Autodesk\Maya2012_64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <OutputFile>$(ConfigurationName)\LiuSalon.mll</OutputFile>
+      <OutputFile>.\LiuSalon.mll</OutputFile>
       <ImportLibrary>$(ConfigurationName)/LiuSalon.lib</ImportLibrary>
       <ProgramDatabaseFile>$(ConfigurationName)/LiuSalon.pdb</ProgramDatabaseFile>
       <AdditionalOptions>/subsystem:windows /dll /incremental:yes /debug /export:initializePlugin /export:uninitializePlugin %(AdditionalOptions)</AdditionalOptions>
@@ -198,12 +198,14 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cylinder.cpp" />
     <ClCompile Include="HairModelNode.cpp" />
     <ClCompile Include="LiuSalonCmd.cpp" />
     <ClCompile Include="PluginMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cyHairFile.h" />
+    <ClInclude Include="cylinder.h" />
     <ClInclude Include="HairModelNode.h" />
     <ClInclude Include="LiuSalonCmd.h" />
   </ItemGroup>
