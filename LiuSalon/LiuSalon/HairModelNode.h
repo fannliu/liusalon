@@ -14,6 +14,8 @@
 #include <maya/MPlug.h>
 #include <maya/MDataBlock.h>
 #include <maya/MFnMeshData.h>
+#include "cyHairFile.h"
+#include "cylinder.h"
 
 class HairModelNode : public MPxNode
 {
@@ -24,9 +26,13 @@ public:
 	static  void*	creator();
 	static  MStatus initialize();
 
-	// TODO: fill in MObjects
+	static MObject outputMesh;
+	static MObject numStrands;
+	static MObject numPoints;
+	static MObject hairLength;
+	static MObject file;
 	static MTypeId	id;
 
 protected:
-	//MObject createMesh(MObject& outData, MStatus& stat, vector<LSystem::Branch> branches);
+	MObject createMesh(MObject& outData, MStatus& stat, cyHairFile& hair);
 };

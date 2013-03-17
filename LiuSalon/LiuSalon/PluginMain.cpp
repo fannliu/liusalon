@@ -24,9 +24,9 @@ MStatus initializePlugin( MObject obj )
     MStatus   status = MStatus::kSuccess;
     MFnPlugin plugin( obj, "LiuSalon", "1.0", "Any");
 
-	// load external i
-    //MGlobal::executeCommand("source \"" + plugin.loadPath() + "/ui.mel\"");
-	//status = plugin.registerUI("createLiuSalonUI", "deleteLiuSalonUI");
+	// load external ui
+    MGlobal::executeCommand("source \"" + plugin.loadPath() + "/ui.mel\"");
+	status = plugin.registerUI("createLiuSalonUI", "deleteLiuSalonUI");
 
 	// Register Command
 	status = plugin.registerCommand( "LiuSalonCmd", LiuSalonCmd::creator, LiuSalonCmd::newSyntax );

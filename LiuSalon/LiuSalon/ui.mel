@@ -1,0 +1,73 @@
+global proc createLiuSalonUI()
+{
+    global string $gMainWindow;
+    setParent $gMainWindow;
+    menu -label "LiuSalon" myMenu;
+    setParent -menu myMenu;
+    menuItem -label "Create hair strand..." - command "createHairStrand";
+    menuItem -label "Create hair model..." -command "createHairModel";
+    menuItem -label "Assign hair shader..." -command "assignHairShader";
+}
+
+global proc deleteLiuSalonUI()
+{
+    deleteUI -menu myMenu;
+}
+
+global proc browseHairFile()
+{
+    /*string $filePath[] = `fileDialog2 -fileMode 1 -caption "Browse for hair files"`;
+    if (`size($filePath)`)
+    {
+        $fileId = `fopen $filePath[0] "r"`;
+        string $filecontent;
+        $grammar = `fread $fileId $grammar`;
+        scrollField -edit -tx $grammar myScrollField;
+    }*/
+}
+
+global proc createHairStrand()
+{
+    if ( `window -exists myWindow` ) {
+     deleteUI myWindow;
+    }
+    
+    // create a command to delete the window
+    $command = ("deleteUI myWindow");
+
+    window -title "Create Hair Strand" myWindow;
+        columnLayout;
+            intSliderGrp -label "Num Strands" -field true
+                -minValue 0 -maxValue 10 hair_strands;
+            intSliderGrp -label "Num Points Per Strand" -field true
+                -minValue 0 -maxValue 10 hair_points;
+            floatSliderGrp -label "Length of Each Strand" -field true
+                -minValue 0 -maxValue 10 hair_length;
+            rowLayout -nc 2;
+                button -label "Create" -w 50 -command "callCmd()";
+                button -label "Cancel" -command $command;
+            setParent ..;
+    showWindow myWindow;
+}
+
+global proc callCmd() {
+    int $p = `intSliderGrp -q -value hair_points`;
+    int $s = `intSliderGrp -q -value hair_strands`;
+    int $l = `floatSliderGrp -q -value hair_length`;
+    LiuSalonCmd -strands $s -points $p -length $l;
+}
+
+ global proc createHairModel()
+{
+    createNode transform -n HairModel1;
+    createNode mesh -n HairModelShape1 -p HairModel1;
+    sets -add initialShadingGroup HairModelShape1;
+    createNode HairModelNode -n HairModelNode1;
+    connectAttr HairModelNode1.outputMesh HairModelShape1.inMesh;
+}
+
+ global proc assignHairShader()
+{
+   //
+}
+
