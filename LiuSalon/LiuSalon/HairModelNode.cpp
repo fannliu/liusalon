@@ -126,23 +126,40 @@ MObject HairModelNode::createMesh(MObject& outData, MStatus& stat, cyHairFile& h
 	MIntArray polygonConnects;  // Basically an Index Buffer Object.
 
 	float* points = hair.GetPointsArray();
+	float* thickness = hair.GetThicknessArray();
 	unsigned short* segments = hair.GetSegmentsArray();
 	cyHairFileHeader header = hair.GetHeader();
-	int numStrands = header.hair_count;
-	int index = 0;
-	int numSegments;
 
+	int numStrands = header.hair_count; 
+	int index = 0;
+	int numSegments = header.d_segments;
+	cout <<"num of segments"<<numSegments<<endl;
+
+	int hasSegments = header.arrays & CY_HAIR_FILE_SEGMENTS_BIT;
+	int hasThickness = header.arrays & CY_HAIR_FILE_THICKNESS_BIT;
+	
 	// The magic to fill vertexArray, polygonCounts, and polygonConnects goes here.
 	for (int i = 0; i < numStrands; i++) 
 	{
 		// get number of segments on this strand
-		numSegments = segments[i];
+		cout <<hasSegments <<endl;
+		if(hasSegments)
+			numSegments = segments[i];
+		cout <<numSegments<<endl;
 		for (int j = 0; j < numSegments; j++)
 		{
 			MPointArray cvertexArray;  // The vertices of the geometry.
 			MIntArray cpolygonCounts;  // Array of # of vertices per face.
 			MIntArray cpolygonConnects;  // Basically an Index Buffer Object.
-			CylinderMesh newCylinder(MPoint(points[index], points[index+1], points[index+2]), MPoint(points[index+3], points[index+4], points[index+5]), 0.5, 0.5);
+			float r1 = header.d_thickness;
+			float r2 = r1;
+
+			if(hasThickness){
+				r1 = thickness[ index/3     ];
+				r2 = thickness[ index/3 + 1 ];
+			}
+			cout << r1 << " " << r2<<endl;
+			CylinderMesh newCylinder(MPoint(points[index], points[index+1], points[index+2]), MPoint(points[index+3], points[index+4], points[index+5]), r1, r2);
 			newCylinder.appendToMesh(vertexArray, polygonCounts, polygonConnects);
 		
 			index += 3;
@@ -162,6 +179,7 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 {
 	// call this function whenever attribute changes
 	// recompute the output mesh
+	
 	MStatus returnStatus;
 	if (plug == outputMesh) {
 		cyHairFile* h = new cyHairFile();
@@ -172,19 +190,31 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 		McheckErr(returnStatus, "Error getting file data handle\n");
 		std::string fileName = fileData.asString().asChar();
 
+		//C:/Users/adair/Documents/GitHub/liusalon/LiuSalon/LiuSalon/hairFiles/straight.hair
+		
 		if (!fileName.empty())
 		{
-			// find the actual file
-			MObject pluginObj = MFnPlugin::findPlugin("LiuSalon");
-			MFnPlugin plugin(pluginObj);
+		
+			int hairCount = h->LoadFromFile(fileName.c_str());
+
+			// get hair strands
+			MDataHandle strandsData = data.inputValue( numStrands, &returnStatus ); 
+			McheckErr(returnStatus, "Error getting strands data handle\n");
+			int st = strandsData.asInt();
+
+			if ( st > 0 && st < hairCount )
+				h->SetHairCount(st);//set number of hair strand
+
 		}
 		else
 		{
 			// if no file then get other data for user created hair
-			// get num points
+			// get num points per strand
 			MDataHandle pointsData = data.inputValue( numPoints, &returnStatus ); 
 			McheckErr(returnStatus, "Error getting points data handle\n");
 			int pts = pointsData.asInt();
+
+			
 
 			// get hair strands
 			MDataHandle strandsData = data.inputValue( numStrands, &returnStatus ); 
@@ -198,9 +228,10 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 
 			// TODO: add a cube as an input attribute
 
-			h->CreateHair(st);
+			h->SetDefaultSegmentCount(pts - 1); 
+			cout<<"num of seg prev="<<h->GetHeader().d_segments<<endl;
 			h->CreatePoints(st*pts);
-			unsigned short* segments = h->GetSegmentsArray();
+	
 			float* points = h->GetPointsArray();
 
 			// fill in random points
@@ -211,7 +242,7 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 
 			for (int i = 0; i < st; i++)
 			{
-				segments[i] = pts-1; // TODO: probably unnecessary
+			
 				for (int j = 0; j < pts; j++)
 				{
 					points[index] = x;
@@ -221,21 +252,21 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 				}
 				x++;
 			}
-
-			/* Get output object */
-			MDataHandle outputHandle = data.outputValue(outputMesh, &returnStatus);
-			McheckErr(returnStatus, "ERROR getting polygon data handle\n");
-
-			MFnMeshData dataCreator;
-			MObject newOutputData = dataCreator.create(&returnStatus);
-			McheckErr(returnStatus, "ERROR creating outputData");
-			
-			createMesh(newOutputData, returnStatus, *h);
-			McheckErr(returnStatus, "ERROR creating new strand");
-		
-			outputHandle.set(newOutputData);
-			data.setClean( plug );
 		}
+		
+				/* Get output object */
+		MDataHandle outputHandle = data.outputValue(outputMesh, &returnStatus);
+		McheckErr(returnStatus, "ERROR getting polygon data handle\n");
+
+		MFnMeshData dataCreator;
+		MObject newOutputData = dataCreator.create(&returnStatus);
+		McheckErr(returnStatus, "ERROR creating outputData");
+			
+		createMesh(newOutputData, returnStatus, *h);
+		McheckErr(returnStatus, "ERROR creating new strand");
+		
+		outputHandle.set(newOutputData);
+		data.setClean( plug );
 	}
 	else
 		return MS::kUnknownParameter;

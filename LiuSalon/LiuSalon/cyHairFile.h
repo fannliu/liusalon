@@ -119,10 +119,11 @@ public:
 	void SetHairCount( int count )
 	{
 		header.hair_count = count;
-		if ( segments ) {
+	/*	if ( segments ) {
 			delete [] segments;
 			segments = new unsigned short[ header.hair_count ];
-		}
+		}*/
+		
 	}
 
 	// Sets the point count, re-allocates points, thickness, transparency, and colors arrays if necessary.
@@ -152,29 +153,18 @@ public:
 	// creates the points array based on count
 	void CreatePoints(int count)
 	{
-		SetPointCount(count);
-		if (!points) {
-			points = new float[ header.point_count*3 ];
-		}
-		if (!thickness) {
-			thickness = new float[ header.point_count ];
-		}
-		if (!transparency) {
-			transparency = new float[ header.point_count ];
-		}
-		if (!colors) {
-			colors = new float[ header.point_count*3 ];
-		}
+		SetHairCount(count);
+
+		if (points) 
+			delete [] points;
+		if(!(header.arrays & CY_HAIR_FILE_POINTS_BIT))
+			header.arrays += CY_HAIR_FILE_POINTS_BIT;
+
+		points = new float[count*3 ];
+		
 	}
 
-	// creates segments array based on count
-	void CreateHair(int count)
-	{
-		header.hair_count = count;
-		if (!segments) {
-			segments = new unsigned short[ header.hair_count ];
-		}
-	}
+
 
 	/// Use this function to allocate/delete arrays.
 	/// Before you call this method set hair count and point count.
@@ -222,7 +212,7 @@ public:
 
 		// read the header
 		size_t headread = fread( &header, sizeof(cyHairFileHeader), 1, fp );
-		cout <<"start\n";
+	
 
 		#define _CY_FAILED_RETURN(errorno) { Initialize(); fclose( fp ); return errorno; }
 
