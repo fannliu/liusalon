@@ -26,6 +26,7 @@ public:
 	static  void*	creator();
 	static  MStatus initialize();
 
+	static MObject inputCurve;
 	static MObject outputMesh;
 	static MObject numStrands;
 	static MObject numPoints;
@@ -35,4 +36,5 @@ public:
 
 protected:
 	MObject createMesh(MObject& outData, MStatus& stat, cyHairFile& hair);
+	MStatus createHairCurve(MArrayDataHandle &inputArray, cyHairFile& hair);
 };

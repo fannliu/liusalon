@@ -6,6 +6,7 @@ global proc createLiuSalonUI()
     setParent -menu myMenu;
     menuItem -label "Create hair strand..." - command "createHairStrand";
     menuItem -label "Create hair model..." -command "createHairModel";
+    menuItem -label "Create hair model from selected curves..." -command "createHairModelFromSelected";
     menuItem -label "Assign hair shader..." -command "assignHairShader";
 }
 
@@ -64,6 +65,59 @@ global proc callCmd() {
     sets -add initialShadingGroup HairModelShape1;
     createNode HairModelNode -n HairModelNode1;
     connectAttr HairModelNode1.outputMesh HairModelShape1.inMesh;
+}
+
+global proc createHairModelFromSelected()
+{
+    int $numCurves = 0;
+    string $curveList[];
+    string $selectionList[];
+
+    /*
+        Step 1: build list of selected nurbs curves, if less than two found
+        output error message
+    */
+    $selectionList=`ls -selection`;
+    clear ($curveList);
+
+    for ($i = 0; $i < size($selectionList); $i++)
+    {
+        string $node = $selectionList[$i];
+        string $children[] = `listRelatives -children $node`;
+        for ($j = 0; $j < size ($children); $j++)
+        {
+            string $cnode = $children[$j];
+            if (`nodeType $cnode` == "nurbsCurve")
+            {
+                $curveList [$numCurves] = $cnode;
+                $numCurves++;
+            }
+        }
+    }
+
+    if ($numCurves < 2)
+    {
+        error "Invalid selection.  Select two or more curves.";
+    }
+
+    /*
+        Step 2: create a HairModelNode and connect the curves
+        worldspace to loft node's input
+    */
+    $hairNode = `createNode HairModelNode`;
+
+    for ($i = 0; $i < size($curveList); $i++)
+    {
+        connectAttr ($curveList[$i] + ".worldSpace") ($hairNode + ".in["+$i+"]");
+    }
+    
+    /*
+        Step 3: connect output mesh with mesh
+    */
+    $transformNode = `createNode transform`;
+    $meshNode = `createNode mesh -p $transformNode`;
+    sets -add initialShadingGroup $meshNode;
+    connectAttr ($hairNode + ".outputMesh") ($meshNode + ".inMesh");
 }
 
  global proc assignHairShader()
