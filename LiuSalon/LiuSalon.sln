@@ -7,6 +7,8 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
+		LiuSalon1|Win32 = LiuSalon1|Win32
+		LiuSalon1|x64 = LiuSalon1|x64
 		MayaRelease|Win32 = MayaRelease|Win32
 		MayaRelease|x64 = MayaRelease|x64
 		Release|Win32 = Release|Win32
@@ -17,6 +19,10 @@ Global
 		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.Debug|Win32.Build.0 = Debug_2012|Win32
 		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.Debug|x64.ActiveCfg = Debug_2012|x64
 		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.Debug|x64.Build.0 = Debug_2012|x64
+		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.LiuSalon1|Win32.ActiveCfg = LiuSalon1|Win32
+		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.LiuSalon1|Win32.Build.0 = LiuSalon1|Win32
+		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.LiuSalon1|x64.ActiveCfg = LiuSalon1|x64
+		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.LiuSalon1|x64.Build.0 = LiuSalon1|x64
 		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.MayaRelease|Win32.ActiveCfg = MayaRelease|Win32
 		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.MayaRelease|Win32.Build.0 = MayaRelease|Win32
 		{8AB35FC0-A3F1-40E1-82AF-3BDC5360C106}.MayaRelease|x64.ActiveCfg = MayaRelease|x64

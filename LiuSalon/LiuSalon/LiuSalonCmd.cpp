@@ -32,52 +32,59 @@ MSyntax LiuSalonCmd::newSyntax()
 
 MStatus LiuSalonCmd::doIt( const MArgList& args )
 {
-	MStatus stat = MS::kSuccess;
+	MStatus stat = MS::kSuccess; 
 	setResult( "LiuSalon command executed!\n" );
 
 	// create cyHairFile object for storing hair data
+	// now create the hair
 	cyHairFile* h = new cyHairFile();
+	int hairCount = h->LoadFromFile("C:/Users/adair/Documents/GitHub/liusalon/LiuSalon/LiuSalon/hairFiles/straight.hair");
+	MGlobal::executeCommand(MString("print ")+ hairCount);
 
-	int numStrands = 0;
-	int numPoints = 0;
-	double hairLength = 0;
-	MArgDatabase argData(syntax(), args);
-	h->Initialize();
 
-    if(argData.isFlagSet(strandsFlag))
-		argData.getFlagArgument(strandsFlag, 0, numStrands);
-    if(argData.isFlagSet(pointsFlag))
-		argData.getFlagArgument(pointsFlag, 0, numPoints);
-    if(argData.isFlagSet(lengthFlag))
-		argData.getFlagArgument(lengthFlag, 0, hairLength);
+	int currPtNum = 0;
+	//unsigned short* temp = h->GetSegmentsArray();
 
-	h->CreateHair(numStrands);
-	h->CreatePoints(numStrands*numPoints);
-	unsigned short* segments = h->GetSegmentsArray();
-	float* points = h->GetPointsArray();
+	//unsigned short t2 = temp[0];
+	//MGlobal::executeCommand(MString("print ")+ h->GetSegmentsArray()[0]);
+	//-fpt true - the resulting surface at the path curve
+	int hasSegments = h->GetHeader().arrays & CY_HAIR_FILE_SEGMENTS_BIT;
+	int hasThickness = h->GetHeader().arrays & CY_HAIR_FILE_THICKNESS_BIT;
 
-	std::stringstream deg;
-	deg << " -d " << numPoints-1;
-	MString degreeString(deg.str().c_str());
-	int index = 0;
-	int x = 0;
-	float ystart = -hairLength/2; // where hair strand starts drawing
-	float segLength = hairLength/(numPoints-1); // hair segment length
-	for (int i = 0; i < numStrands; i++)
-	{
-		std::stringstream pts;
-		segments[i] = numPoints-1; // TODO: probably unnecessary
-		for (int j = 0; j < numPoints; j++)
-		{
-			points[index] = x;
-			points[index+1] = ystart + segLength*j;
-			points[index+2] = 0;
-			pts << " -p " << points[index] << " " << points[index+1] << " " << points[index+2];
-			index += 3;
+	int num_of_segments = h->GetHeader().d_segments;
+
+	hairCount = 50;
+
+	for(int i=0; i< hairCount; ++i){
+		
+
+		if(hasSegments)
+			num_of_segments = h->GetSegmentsArray()[i];
+
+		for(unsigned int j=0; j<num_of_segments;++j)
+		{	
+		
+			MGlobal::executeCommand(MString("circle -radius ") + (hasThickness? h->GetThicknessArray()[currPtNum] : h->GetHeader().d_thickness) );
+			
+			int currPtIndex = currPtNum * 3;
+
+			float scale = hasThickness? h->GetThicknessArray()[currPtNum+1] / h->GetThicknessArray()[currPtNum] : 1.0;
+
+			MGlobal::executeCommand(MString("curve -d 1 -p ") 
+				+ h->GetPointsArray()[currPtIndex] + " " + h->GetPointsArray()[currPtIndex+1] + " " + h->GetPointsArray()[currPtIndex+2]
+				+ " -p " 
+				+ h->GetPointsArray()[currPtIndex+3]  + " " + h->GetPointsArray()[currPtIndex+4]  + " " + h->GetPointsArray()[currPtIndex+5] 
+				+" -k 0 -k 1 -name curve1;");
+			MGlobal::executeCommand(MString("select -r nurbsCircle1 curve1;"));
+			MGlobal::executeCommand(MString("extrude -po 1 -et 2 -ucp 1 -fpt true -upn true -sc ") + scale
+										+ " -rsp 1 \"nurbsCircle1\" \"curve1\";");
+			MGlobal::executeCommand(MString("select -r nurbsCircle1; doDelete;"));
+			MGlobal::executeCommand(MString("select -r curve1; doDelete;"));
+			
+			currPtNum ++;
 		}
-		x++;
-		MString pointString(pts.str().c_str());
-		MGlobal::executeCommand("curve" + degreeString + pointString);
+		currPtNum ++;
 	}
+
 	return MStatus::kSuccess;
 }

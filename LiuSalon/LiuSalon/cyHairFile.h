@@ -213,14 +213,16 @@ public:
 	/// Loads hair data from the given HAIR file.
 	int LoadFromFile( const char *filename )
 	{
+		
 		Initialize();
-
+		
 		FILE *fp;
 		fp = fopen( filename, "rb" );
 		if ( fp == NULL ) return CY_HAIR_FILE_ERROR_CANT_OPEN_FILE;
 
 		// read the header
 		size_t headread = fread( &header, sizeof(cyHairFileHeader), 1, fp );
+		cout <<"start\n";
 
 		#define _CY_FAILED_RETURN(errorno) { Initialize(); fclose( fp ); return errorno; }
 
@@ -232,12 +234,13 @@ public:
 		if ( strncmp( header.signature, "HAIR", 4) != 0 ) _CY_FAILED_RETURN(CY_HAIR_FILE_ERROR_WRONG_SIGNATURE);
 
 		// Read segments array
+
 		if ( header.arrays & CY_HAIR_FILE_SEGMENTS_BIT ) {
+
 			segments = new unsigned short[ header.hair_count ];
 			size_t readcount = fread( segments, sizeof(unsigned short), header.hair_count, fp );
 			if ( readcount < header.hair_count ) _CY_FAILED_RETURN(CY_HAIR_FILE_ERROR_READING_SEGMENTS);
 		}
-
 		// Read points array
 		if ( header.arrays & CY_HAIR_FILE_POINTS_BIT ) {
 			points = new float[ header.point_count*3 ];
