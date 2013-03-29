@@ -53,6 +53,7 @@ struct cyHairFileHeader
 	float			d_thickness;	///< default thickness of hair strands
 	float			d_transparency;	///< default transparency of hair strands
 	float			d_color[3];		///< default color of hair strands
+	bool			use_default_seg; ///< set to true if use default segments
 
 	char			info[CY_HAIR_FILE_INFO_SIZE];	///< information about the file
 };
@@ -76,7 +77,6 @@ public:
 	const float* GetThicknessArray() const { return thickness; }		///< Returns thickness array (thickness at each hair point}.
 	const float* GetTransparencyArray() const { return transparency; }	///< Returns transparency array (transparency at each hair point).
 	const float* GetColorsArray() const { return colors; }				///< Returns colors array (rgb color at each hair point).
-
 
 	//////////////////////////////////////////////////////////////////////////
 	///@name Data Access Methods
@@ -129,6 +129,7 @@ public:
 	void SetPointCount( int count )
 	{
 		header.point_count = count;
+		/*
 		if ( points ) {
 			delete [] points;
 			points = new float[ header.point_count*3 ];
@@ -145,35 +146,31 @@ public:
 			delete [] colors;
 			colors = new float[ header.point_count*3 ];
 		}
+		*/
 	}
 	
 	/// LOOK: adding new functions for setting array counts
+	void CreateHair(int count)
+	{
+		// sets number of hair strands
+		SetHairCount(count);
+
+		if (!segments) 
+			segments = new unsigned short[count];
+		header.use_default_seg = false;
+	}
 
 	// creates the points array based on count
 	void CreatePoints(int count)
 	{
 		SetPointCount(count);
-		if (!points) {
-			points = new float[ header.point_count*3 ];
-		}
-		if (!thickness) {
-			thickness = new float[ header.point_count ];
-		}
-		if (!transparency) {
-			transparency = new float[ header.point_count ];
-		}
-		if (!colors) {
-			colors = new float[ header.point_count*3 ];
-		}
-	}
 
-	// creates segments array based on count
-	void CreateHair(int count)
-	{
-		header.hair_count = count;
-		if (!segments) {
-			segments = new unsigned short[ header.hair_count ];
-		}
+		if (points) 
+			delete [] points;
+		if(!(header.arrays & CY_HAIR_FILE_POINTS_BIT))
+			header.arrays += CY_HAIR_FILE_POINTS_BIT;
+
+		points = new float[count*3];
 	}
 
 	/// Use this function to allocate/delete arrays.
@@ -195,7 +192,7 @@ public:
 	}
 
 	/// Sets default number of segments for all hair strands, which is used if segments array does not exist.
-	void SetDefaultSegmentCount( int s ) { header.d_segments = s; }
+	void SetDefaultSegmentCount( int s ) { header.d_segments = s; header.use_default_seg = true; }
 
 	/// Sets default hair strand thickness, which is used if thickness array does not exist.
 	void SetDefaultThickness( float t ) { header.d_thickness = t; }
@@ -222,7 +219,7 @@ public:
 
 		// read the header
 		size_t headread = fread( &header, sizeof(cyHairFileHeader), 1, fp );
-		cout <<"start\n";
+	
 
 		#define _CY_FAILED_RETURN(errorno) { Initialize(); fclose( fp ); return errorno; }
 
@@ -266,7 +263,7 @@ public:
 		if ( header.arrays & CY_HAIR_FILE_COLORS_BIT ) {
 			colors = new float[ header.point_count*3 ];
 			size_t readcount = fread( colors, sizeof(float), header.point_count*3, fp );
-			if ( readcount < header.point_count*3 ) _CY_FAILED_RETURN(CY_HAIR_FILE_ERROR_READING_COLORS);
+			//if ( readcount < header.point_count*3 ) _CY_FAILED_RETURN(CY_HAIR_FILE_ERROR_READING_COLORS);
 		}
 
 		fclose( fp );
