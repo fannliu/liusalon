@@ -62,40 +62,43 @@ class single_scattering_AFC(
         
         return intensityTRT * colorTRT * M_TRT * N_TRT;
     }
-	vector LocalSpherical(vector l, x, y, z)
+	vector GlobalToLocal(vector l, x, y, z;)
     {
         float a = l[0] * x[0] + l[1] * y[0] + l[2] * z[0];
         float b = l[0] * x[1] + l[1] * y[1] + l[2] * z[1];
         float c = l[0] * x[2] + l[1] * y[2] + l[2] * z[2];
 
-        return vector(atan(b, a), PI * 0.5 - acos(c), 0);
+        return vector(a,b,c);
     }
+
+	float angleBtwVec(vector vi, vo; int axis)
+	{
+		vi[axis] = 0;
+		vo[axis] = 0;
+
+		float angle = acos(vi * vo);
+
+		//clamp angle between [-Pi, Pi]
+		return angle;
+	}
     public void surface(output color Ci, Oi;)
     {
-		
-		vector u = -normalize(dPdv);//tangent to the hair fiber
-
-		// Get local frame.-need more work
-      
-        vector T  =   normalize(dPdv);
-        vector Nn =   normalize(N);
-        vector B  =   normalize(Nn ^ T);
-        vector Vn = - normalize(I);
+		// Get local frame
+		vector U  =   normalize(dPdu);
+        vector Nn =   normalize(N);//the shading normal
+		vector V  =	  normalize(dPdv);
+        
+        vector omega_r = GlobalToLocal(-normalize(I), U, Nn, V);//I is the incident ray dir(from eye to the shading point) in local coordinate
 		
 		color singleScatteringResult = 0;
 
-		illuminance(P)
+		illuminance(P)//P is the shading point position, a function ofthe surface parameters (u,v)
 		{
-			vector Ln = normalize(L);
-			vector omega_i = LocalSpherical(Ln, B, Nn, T);//incoming light direction
-			vector omega_o = LocalSpherical(Vn, B, Nn, T);//outgoing view direction
-		
-			float phi = abs(omega_i[0] - omega_o[0]);//longitudinal inclination (dir w.r.t. to the normal plane)
-			if( phi > PI )
-			phi -= 2 * PI;//clamp phi to [-pi, pi]
-			phi = abs(phi);
+			vector omega_i = GlobalToLocal(normalize(L), U, Nn, V);//light ray (from shading point to the light source)
+			
 
-			float theta_h = abs(omega_o[1] - omega-o[1]) * 0,5;//half angle btw theta_i and theta_o; azimuthal angle (dir within the normal plane)
+			float phi =  angleBtwVec(omega_i,omega_o, 2);//longitudinal inclination (dir within the normal plane)
+			float theta_h =  angleBtwVec(omega_i, omega_o, 0);//half angle btw theta_i and theta_o; azimuthal angle (dir wrt the normal plane)
 
 			color f_R = R(theta_h, phi);
 			color f_TT = TT(theta_h, phi);
@@ -106,4 +109,4 @@ class single_scattering_AFC(
 		Ci = singleScatteringResult * Oi;
 	
     }
-}
+};
