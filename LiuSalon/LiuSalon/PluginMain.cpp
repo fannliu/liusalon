@@ -18,6 +18,7 @@
 
 #include "LiuSalonCmd.h"
 #include "HairModelNode.h"
+#include "HairShaderNode.h"
 
 MString filePath;
 MStatus initializePlugin( MObject obj )
@@ -38,7 +39,7 @@ MStatus initializePlugin( MObject obj )
         return status;
     }
 
-	// Register Node
+	// Register HairModelNode
 	status = plugin.registerNode("HairModelNode", HairModelNode::id,
 								  HairModelNode::creator, HairModelNode::initialize);
 	if (!status) {
@@ -46,8 +47,15 @@ MStatus initializePlugin( MObject obj )
 		return status;
 	}
 
-    return status;
-    return status;
+	// Register HairShaderNode
+	status = plugin.registerNode("HairShaderNode", HairShaderNode::id,
+								  HairShaderNode::creator, HairShaderNode::initialize);
+	if (!status) {
+		status.perror("registerNode");
+		return status;
+	}
+
+	return status;
 }
 
 MStatus uninitializePlugin( MObject obj)
@@ -62,6 +70,12 @@ MStatus uninitializePlugin( MObject obj)
     }
 
 	status = plugin.deregisterNode(HairModelNode::id);
+	if (!status) {
+		status.perror("deregisterNode");
+		return status;
+	}
+
+	status = plugin.deregisterNode(HairShaderNode::id);
 	if (!status) {
 		status.perror("deregisterNode");
 		return status;

@@ -60,11 +60,11 @@ global proc callCmd() {
 
  global proc createHairModel()
 {
-    createNode transform -n HairModel1;
-    createNode mesh -n HairModelShape1 -p HairModel1;
-    sets -add initialShadingGroup HairModelShape1;
-    createNode HairModelNode -n HairModelNode1;
-    connectAttr HairModelNode1.outputMesh HairModelShape1.inMesh;
+    $transformNode = `createNode transform`;
+    $meshNode = `createNode mesh -p $transformNode`;
+    sets -add initialShadingGroup $meshNode;
+    $hairNode = `createNode HairModelNode`;
+    connectAttr ($hairNode + ".outputMesh") ($meshNode + ".inMesh");
 }
 
 global proc createHairModelFromSelected()
@@ -122,6 +122,10 @@ global proc createHairModelFromSelected()
 
  global proc assignHairShader()
 {
-   //
+    // this should create a 3delight surface shader
+    string $shader_path = `fileDialog -directoryMask "*.sdl" -title "Open Hair Shader File"`;
+    string $surface_shader = DL_createSurfaceShader( $shader_path, 1);
+    DL_setAssignmentPanelAttrib("object", "surface", $surface_shader );
+    select $surface_shader;
 }
 
