@@ -87,17 +87,17 @@ class single_scattering_AFC(
     public void surface(output color Ci, Oi;)
     {
 		// Get local frame
-		vector U  =   normalize(dPdu);
-        vector Nn =   normalize(N);//the shading normal
-		vector V  =	  normalize(U^Nn);
+		vector lx  =   normalize(dPdu);
+		vector ly  =   normalize(N);//the shading normal
+		vector lz  =   normalize(dPdv);	
         
-        vector omega_r = GlobalToLocal(-normalize(I), U, Nn, V);//I is the incident ray dir(from eye to the shading point) in local coordinate
+        vector omega_r = GlobalToLocal(-normalize(I), lx, ly, lz);//I is the incident ray dir(from eye to the shading point) in local coordinate
 		
 		color singleScatteringResult = 0;
 
 		illuminance(P)//P is the shading point position, a function ofthe surface parameters (u,v)
 		{
-			vector omega_i = GlobalToLocal(normalize(L), U, Nn, V);//light ray (from shading point to the light source)
+			vector omega_i = GlobalToLocal(normalize(L), lx, ly, lz);//light ray (from shading point to the light source)
 			
 
 			float phi =  angleBtwVec(omega_i,omega_r, 2);//longitudinal inclination (dir within the normal plane)
@@ -109,6 +109,9 @@ class single_scattering_AFC(
 			color f_TRT = TRT(theta_h, phi);
 			//singleScatteringResult += (f_R  + f_TT + f_TRT)/(cos(theta)*cos(theta));
 			singleScatteringResult += (f_R)/(cos(theta)*cos(theta));
+			//singleScatteringResult += (f_TT)/(cos(theta)*cos(theta));
+			//singleScatteringResult += (f_TRT)/(cos(theta)*cos(theta));
+		
 		}
 		Oi = Os;
 		Ci = singleScatteringResult * Oi;
