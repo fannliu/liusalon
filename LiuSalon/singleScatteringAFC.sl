@@ -1,26 +1,27 @@
 class single_scattering_AFC(
-	uniform color colorR = color(1, 1, 1);
-	uniform float intensityR = 1;
-	uniform float longitudinalShiftR = -7.5;
-	uniform float longitudinalWidthR = 7.5;
+	uniform color colorR = color(1, 0, 0);
+	uniform float intensityR = 0.7;
+	uniform float longitudinalShiftR = 7.5;
+	uniform float longitudinalWidthR = 2.5;
 
-	uniform color colorTT = color(1, 1, 1);
-	uniform float intensityTT = 1;
+	uniform color colorTT = color(0, 1, 0);
+	uniform float intensityTT = 0.5;
 	uniform float longitudinalShiftTT = 3.75;
 	uniform float longitudinalWidthTT = 3.75;
 	uniform float azimuthalWidthTT = 3;
 
-	uniform color colorTRT = color(1, 1, 1);
-	uniform float intensityTRT = 1;
+	uniform color colorTRT = color(0, 0, 1);
+	uniform float intensityTRT = 0.5;
 	uniform float longitudinalShiftTRT = 11.25;
 	uniform float longitudinalWidthTRT = 15;
 
-	uniform float intensityG = 1;
+	uniform float intensityG = 0.2;
 	uniform float azimuthalWidthG = 10;)//equivalent to frequency
 {
     float g(float variance, x;)
     {
-        return exp(-x*x*0.5/variance)/sqrt(2*PI*variance);
+       return exp(-x*x*0.5/variance)/sqrt(2*PI*variance);
+	   //return exp(- pow(x, 2.0) * 0.5 / pow(variance, 2.0));
     }
 
     color R(float theta_h, phi;)
@@ -76,9 +77,11 @@ class single_scattering_AFC(
 		vi[axis] = 0;
 		vo[axis] = 0;
 
-		float angle = acos(vi.vo);
-
-		//clamp angle between [-Pi, Pi]
+		float angle = acos(vi.vo/(length(vi)*length(vo)));
+		if ( angle > PI )
+                angle -= 2 * PI;
+        angle = abs(angle);
+		
 		return angle;
 	}
     public void surface(output color Ci, Oi;)
@@ -86,7 +89,7 @@ class single_scattering_AFC(
 		// Get local frame
 		vector U  =   normalize(dPdu);
         vector Nn =   normalize(N);//the shading normal
-		vector V  =	  normalize(dPdv);
+		vector V  =	  normalize(U^Nn);
         
         vector omega_r = GlobalToLocal(-normalize(I), U, Nn, V);//I is the incident ray dir(from eye to the shading point) in local coordinate
 		
@@ -104,7 +107,8 @@ class single_scattering_AFC(
 			color f_R = R(theta_h, phi);
 			color f_TT = TT(theta_h, phi);
 			color f_TRT = TRT(theta_h, phi);
-			singleScatteringResult += (f_R  + f_TT + f_TRT)/(cos(theta)*cos(theta));
+			//singleScatteringResult += (f_R  + f_TT + f_TRT)/(cos(theta)*cos(theta));
+			singleScatteringResult += (f_R)/(cos(theta)*cos(theta));
 		}
 		Oi = Os;
 		Ci = singleScatteringResult * Oi;
