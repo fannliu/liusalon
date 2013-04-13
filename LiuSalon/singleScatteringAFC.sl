@@ -16,7 +16,7 @@ class single_scattering_AFC(
 	uniform float longitudinalWidthTRT = 15;
 
 	uniform float intensityG = 1;
-	uniform float azimuthalWidthG = 10;//equivalent to frequency
+	uniform float azimuthalWidthG = 10;)//equivalent to frequency
 {
     float g(float variance, x;)
     {
@@ -71,12 +71,12 @@ class single_scattering_AFC(
         return vector(a,b,c);
     }
 
-	float angleBtwVec(vector vi, vo; int axis)
+	float angleBtwVec(vector vi, vo; float axis;)
 	{
 		vi[axis] = 0;
 		vo[axis] = 0;
 
-		float angle = acos(vi * vo);
+		float angle = acos(vi.vo);
 
 		//clamp angle between [-Pi, Pi]
 		return angle;
@@ -97,8 +97,9 @@ class single_scattering_AFC(
 			vector omega_i = GlobalToLocal(normalize(L), U, Nn, V);//light ray (from shading point to the light source)
 			
 
-			float phi =  angleBtwVec(omega_i,omega_o, 2);//longitudinal inclination (dir within the normal plane)
-			float theta_h =  angleBtwVec(omega_i, omega_o, 0);//half angle btw theta_i and theta_o; azimuthal angle (dir wrt the normal plane)
+			float phi =  angleBtwVec(omega_i,omega_r, 2);//longitudinal inclination (dir within the normal plane)
+			float theta = angleBtwVec(omega_i, omega_r, 0);
+			float theta_h =  theta * 0.5;//half angle btw theta_i and theta_o; azimuthal angle (dir wrt the normal plane)
 
 			color f_R = R(theta_h, phi);
 			color f_TT = TT(theta_h, phi);
@@ -109,4 +110,4 @@ class single_scattering_AFC(
 		Ci = singleScatteringResult * Oi;
 	
     }
-};
+}
