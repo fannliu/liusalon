@@ -1,8 +1,8 @@
 class single_scattering_AFC(
 	uniform color colorR = color(1, 0, 0);
 	uniform float intensityR = 0.7;
-	uniform float longitudinalShiftR = 7.5;
-	uniform float longitudinalWidthR = 2.5;
+	uniform float longitudinalShiftR = -7.5;
+	uniform float longitudinalWidthR = 7.5;
 
 	uniform color colorTT = color(0, 1, 0);
 	uniform float intensityTT = 0.5;
@@ -78,18 +78,18 @@ class single_scattering_AFC(
 		vo[axis] = 0;
 
 		float angle = acos(vi.vo/(length(vi)*length(vo)));
-		if ( angle > PI )
-                angle -= 2 * PI;
-        angle = abs(angle);
+		//if ( angle > PI )
+          //      angle -= 2 * PI;
+        //angle = abs(angle);
 		
 		return angle;
 	}
     public void surface(output color Ci, Oi;)
     {
 		// Get local frame
-		vector lx  =   normalize(dPdu);
+		vector lx  =   normalize(-dPdu);
 		vector ly  =   normalize(N);//the shading normal
-		vector lz  =   normalize(dPdv);	
+		vector lz  =   normalize(-dPdv);	
         
         vector omega_r = GlobalToLocal(-normalize(I), lx, ly, lz);//I is the incident ray dir(from eye to the shading point) in local coordinate
 		
