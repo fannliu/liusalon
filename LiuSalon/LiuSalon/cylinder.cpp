@@ -114,7 +114,7 @@ void CylinderMesh::initCylinderMesh(double r1, double r2)
         gNormals.append(MVector(0,r2*cos(angle*i), r2*sin(angle*i)));
     }
     // endcap 1
-    gPoints.append(MPoint(0,0,0));
+    /*gPoints.append(MPoint(0,0,0));
     gNormals.append(MVector(-1,0,0));
 
     // endcap 2
@@ -140,7 +140,7 @@ void CylinderMesh::initCylinderMesh(double r1, double r2)
         if (next >= 2*numslices) next = numslices;
         gFaceConnects.append(next);
     }
-
+	*/
     // Set indices for middle
     for (int i = 0; i < numslices; i++)
     {
