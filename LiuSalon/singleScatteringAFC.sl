@@ -1,22 +1,22 @@
 class single_scattering_AFC(
-	uniform color colorR = color(0.86, 0.67, 0.21);
-	uniform float intensityR = 0.1;
-	uniform float longitudinalShiftR = -4.5;//[-10,-5]
-	uniform float longitudinalWidthR = 2.5;//[5, 10]
+	uniform color PrimaryHL_Color = color(0.86, 0.67, 0.21);
+	uniform float PrimaryHL_Intensity = 0.1;
+	uniform float PrimaryHL_Longi_Position = -4.5;//[-10,-5]
+	uniform float PrimaryHL_Longi_Width = 2.5;//[5, 10]
 
-	uniform color colorTT = color(0, 1, 0);
-	uniform float intensityTT = 0.5;
-	uniform float longitudinalShiftTT = 3.75;
-	uniform float longitudinalWidthTT = 3.75;
-	uniform float azimuthalWidthTT = 3;
+	uniform color BacklitRim_Color= color(0, 1, 0);
+	uniform float BacklitRim_Intensity = 0.5;
+	uniform float BacklitRim_Longi_Position= 3.75;
+	uniform float BacklitRim_Longi_Width = 3.75;
+	uniform float BacklitRim_AzimuthalWidth = 3;
 
-	uniform color colorTRT = color(0, 0, 1);
-	uniform float intensityTRT = 0.5;
-	uniform float longitudinalShiftTRT = 11.25;
-	uniform float longitudinalWidthTRT = 15;
+	uniform color SecondaryHL_Color = color(0, 0, 1);
+	uniform float SecondaryHL_Intensity = 0.5;
+	uniform float SecondaryHL_Longi_Shift = 11.25;
+	uniform float SecondaryHL_Longi_Width = 15;
 	
-	uniform float intensityG = 0.2;
-	uniform float azimuthalWidthG = 10;)//equivalent to frequency
+	uniform float Glints_Intensity = 0.2;
+	uniform float Glints_Frequency = 10;)//equivalent to frequency
 {
 	//unit-integral zero-mean Gaussian function
     float g(float deviation, x;)
@@ -26,41 +26,41 @@ class single_scattering_AFC(
 
     color R(float theta_h, phi;)
     {
-		float alpha_R = radians(longitudinalShiftR);
-        float beta_R  = radians(longitudinalWidthR);
+		float alpha_R = radians(PrimaryHL_Longi_Position);
+        float beta_R  = radians(PrimaryHL_Longi_Width);
 
         float M_R = g(beta_R, theta_h - alpha_R);
         float N_R = cos(phi * 0.5);
-        return colorR * intensityR * M_R * N_R;
+        return PrimaryHL_Color * PrimaryHL_Intensity * M_R * N_R;
     }
 
     color TT(float theta_h, phi;)
 	{
-		float alpha_TT = radians(longitudinalShiftTT);
-        float beta_TT  = radians(longitudinalWidthTT);
-        float gamma_TT = radians(azimuthalWidthTT);
+		float alpha_TT = radians(BacklitRim_Longi_Position);
+        float beta_TT  = radians(BacklitRim_Longi_Width);
+        float gamma_TT = radians(BacklitRim_AzimuthalWidth);
 
         float M_TT = g(beta_TT, theta_h - beta_TT);
         float N_TT = g(gamma_TT, PI - phi);
     
-        return colorTT * intensityTT * M_TT * N_TT;
+        return BacklitRim_Color* BacklitRim_Intensity * M_TT * N_TT;
     }
 
     color TRT(float theta_h, phi;)
     {
-		float alpha_TRT = radians(longitudinalShiftTRT);
-        float beta_TRT  = radians(longitudinalWidthTRT);
+		float alpha_TRT = radians(SecondaryHL_Longi_Shift);
+        float beta_TRT  = radians(SecondaryHL_Longi_Width);
 
         float G_angle = radians(30);//random between 30-45
-        float gamma_G = radians(azimuthalWidthG);
+        float gamma_G = radians(Glints_Frequency);
 
         float M_TRT = g(beta_TRT, theta_h - alpha_TRT);
         
 		float N_TRT_minus_G = cos(phi * 0.5);
-        float N_G = intensityG * g(gamma_G, G_angle - phi);
+        float N_G = Glints_Intensity * g(gamma_G, G_angle - phi);
         float N_TRT = N_TRT_minus_G + N_G;
         
-        return intensityTRT * colorTRT * M_TRT * N_TRT;
+        return SecondaryHL_Intensity * SecondaryHL_Color * M_TRT * N_TRT;
     }
 	vector GlobalToLocal(vector l, x, y, z;)
     {
@@ -103,8 +103,8 @@ class single_scattering_AFC(
 			color f_R = R(theta_h, phi);
 			color f_TT = TT(theta_h, phi);
 			color f_TRT = TRT(theta_h, phi);
-			//singleScatteringResult += (f_R  + f_TT + f_TRT)/(cos(theta)*cos(theta));
-			singleScatteringResult += (f_R)/(cos(theta)*cos(theta));
+			singleScatteringResult += (f_R  + f_TT + f_TRT)/(cos(theta)*cos(theta));
+			//singleScatteringResult += (f_R)/(cos(theta)*cos(theta));
 			//singleScatteringResult += (f_TT)/(cos(theta)*cos(theta));
 			//singleScatteringResult += (f_TRT)/(cos(theta)*cos(theta));
 		
