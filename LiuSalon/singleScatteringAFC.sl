@@ -1,8 +1,8 @@
 class single_scattering_AFC(
 	uniform color colorR = color(0.86, 0.67, 0.21);
-	uniform float intensityR = 0.3;
-	uniform float longitudinalShiftR = -7.5;//[-10,-5]
-	uniform float longitudinalWidthR = 5.0;//[5, 10]
+	uniform float intensityR = 0.1;
+	uniform float longitudinalShiftR = -4.5;//[-10,-5]
+	uniform float longitudinalWidthR = 2.5;//[5, 10]
 
 	uniform color colorTT = color(0, 1, 0);
 	uniform float intensityTT = 0.5;
