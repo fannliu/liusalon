@@ -1,8 +1,8 @@
 class single_scattering_AFC(
 	uniform color colorR = color(1, 0, 0);
 	uniform float intensityR = 0.7;
-	uniform float longitudinalShiftR = -7.5;
-	uniform float longitudinalWidthR = 7.5;
+	uniform float longitudinalShiftR = 7.5;
+	uniform float longitudinalWidthR = 0.3;
 
 	uniform color colorTT = color(0, 1, 0);
 	uniform float intensityTT = 0.5;
@@ -18,7 +18,7 @@ class single_scattering_AFC(
 	uniform float intensityG = 0.2;
 	uniform float azimuthalWidthG = 10;)//equivalent to frequency
 {
-    float g(float variance, x;)
+    float g(float variance,x;)
     {
        return exp(-x*x*0.5/variance)/sqrt(2*PI*variance);
 	   //return exp(- pow(x, 2.0) * 0.5 / pow(variance, 2.0));
@@ -71,19 +71,6 @@ class single_scattering_AFC(
 
         return vector(a,b,c);
     }
-
-	float angleBtwVec(vector vi, vo; float axis;)
-	{
-		vi[axis] = 0;
-		vo[axis] = 0;
-
-		float angle = acos(vi.vo/(length(vi)*length(vo)));
-		//if ( angle > PI )
-          //      angle -= 2 * PI;
-        //angle = abs(angle);
-		
-		return angle;
-	}
     public void surface(output color Ci, Oi;)
     {
 		// Get local frame
@@ -99,9 +86,18 @@ class single_scattering_AFC(
 		{
 			vector omega_i = GlobalToLocal(normalize(L), lx, ly, lz);//light ray (from shading point to the light source)
 			
+			float phi_i = atan(omega_i[1] - omega_i[0]);
+			float phi_r = atan(omega_r[1] - omega_r[0]);
 
-			float phi =  angleBtwVec(omega_i,omega_r, 2);//longitudinal inclination (dir within the normal plane)
-			float theta = angleBtwVec(omega_i, omega_r, 0);
+			float phi = abs(phi_r -  phi_i);//relative azimuth
+            if ( phi > PI )
+                phi -= 2 * PI;
+            phi = abs(phi);
+
+			float theta_i = PI * 0.5 - acos(omega_i[2]);
+			float theta_r = PI * 0.5 - acos(omega_r[2]);
+			float theta = theta_i + theta_r;
+			
 			float theta_h =  theta * 0.5;//half angle btw theta_i and theta_o; azimuthal angle (dir wrt the normal plane)
 
 			color f_R = R(theta_h, phi);
