@@ -1,17 +1,17 @@
 class single_scattering_AFC(
-	uniform color PrimaryHL_Color = color(0.86, 0.67, 0.21);
-	uniform float PrimaryHL_Intensity = 0.1;
-	uniform float PrimaryHL_LongituPosition = -4.5;//[-10,-5]
-	uniform float PrimaryHL_LongituWidth = 2.5;//[5, 10]
+	uniform color PrimaryHL_Color        = color(0.86, 0.67, 0.21);
+	uniform float PrimaryHL_Intensity    = 0.1;
+	uniform float PrimaryHL_LongituShift = -4.5;//[-10, -5]
+	uniform float PrimaryHL_LongituWidth = 2.5; //[  5, 10]
 
-	uniform color BacklitRim_Color = color(0, 1, 0);
-	uniform float BacklitRim_Intensity = 0.1;
-	uniform float BacklitRim_LongituPosition = 3.75;
-	uniform float BacklitRim_LongituWidth = 3.75;
+	uniform color BacklitRim_Color          = color(0, 1, 0);
+	uniform float BacklitRim_Intensity      = 0.1;
+	uniform float BacklitRim_LongituShift   = 3.75;
+	uniform float BacklitRim_LongituWidth   = 3.75;
 	uniform float BacklitRim_AzimuthalWidth = 3;
 
-	uniform color SecondaryHL_Color = color(0, 0, 1);
-	uniform float SecondaryHL_Intensity = 0.1;
+	uniform color SecondaryHL_Color        = color(0, 0, 1);
+	uniform float SecondaryHL_Intensity    = 0.1;
 	uniform float SecondaryHL_LongituShift = 11.25;
 	uniform float SecondaryHL_LongituWidth = 15;
 	
@@ -27,7 +27,7 @@ class single_scattering_AFC(
 
     color R(float theta_h, phi;)
     {
-		float alpha_R = radians(PrimaryHL_LongituPosition);
+		float alpha_R = radians(PrimaryHL_LongituShift);
 		float beta_R  = radians(PrimaryHL_LongituWidth);
 
 		float M_R     = g(beta_R, theta_h - alpha_R);
@@ -37,7 +37,7 @@ class single_scattering_AFC(
 
     color TT(float theta_h, phi;)
 	{
-		float alpha_TT = radians(BacklitRim_LongituPosition);
+		float alpha_TT = radians(BacklitRim_LongituShift);
 		float beta_TT  = radians(BacklitRim_LongituWidth);
 		float gamma_TT = radians(BacklitRim_AzimuthalWidth);
 
@@ -63,14 +63,18 @@ class single_scattering_AFC(
         
 		return SecondaryHL_Intensity * SecondaryHL_Color * M_TRT * N_TRT;
     }
-	vector GlobalToLocal(vector l, x, y, z;)
-    {
-		float a = l[0] * x[0] + l[1] * y[0] + l[2] * z[0];
-		float b = l[0] * x[1] + l[1] * y[1] + l[2] * z[1];
-		float c = l[0] * x[2] + l[1] * y[2] + l[2] * z[2];
 
-		return vector(a,b,c);
+	vector GlobalToLocal(vector gv, x, y, z;)
+    {
+		//transform global vector gv by matrix [LocalUnitX, LocalUnitY, LocalUnitZ]
+
+		float x_ = gv[0] * x[0] + gv[1] * y[0] + gv[2] * z[0];
+		float y_ = gv[0] * x[1] + gv[1] * y[1] + gv[2] * z[1];
+		float z_ = gv[0] * x[2] + gv[1] * y[2] + gv[2] * z[2];
+
+		return vector(x_, y_, z_);
     }
+
     public void surface(output color Ci, Oi;)
     {
 		// Get unit vectors along local coordinates
@@ -105,9 +109,8 @@ class single_scattering_AFC(
 			color f_TT  =  TT(theta_h, phi);
 			color f_TRT = TRT(theta_h, phi);
 			singleScatteringResult += ( f_R  + f_TT + f_TRT ) / ( cos(theta)*cos(theta) );
-			
-		
 		}
+
 		Oi = Os; //Os is the surface opacity
 		Ci = singleScatteringResult * Oi;
 	
