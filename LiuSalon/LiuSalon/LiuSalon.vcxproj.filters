@@ -35,6 +35,9 @@
     <ClCompile Include="cylinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HairShaderNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cyHairFile.h">
@@ -47,6 +50,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="cylinder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HairShaderNode.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

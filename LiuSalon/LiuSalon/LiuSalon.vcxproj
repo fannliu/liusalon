@@ -200,6 +200,7 @@
   <ItemGroup>
     <ClCompile Include="cylinder.cpp" />
     <ClCompile Include="HairModelNode.cpp" />
+    <ClCompile Include="HairShaderNode.cpp" />
     <ClCompile Include="LiuSalonCmd.cpp" />
     <ClCompile Include="PluginMain.cpp" />
   </ItemGroup>
@@ -207,6 +208,7 @@
     <ClInclude Include="cyHairFile.h" />
     <ClInclude Include="cylinder.h" />
     <ClInclude Include="HairModelNode.h" />
+    <ClInclude Include="HairShaderNode.h" />
     <ClInclude Include="LiuSalonCmd.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
