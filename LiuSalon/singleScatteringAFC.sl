@@ -75,28 +75,29 @@ class single_scattering_AFC(
     {
 		// Get unit vectors along local coordinates
 		vector lx  =  normalize(dPdu);
-		vector ly  =  normalize(N);    //the shading normal
+		vector ly  =  normalize(N);     //the shading normal
 		vector lz  =  normalize(dPdv);	//hair tangent (from root to tip)
 		
         
-		vector omega_r = GlobalToLocal( -normalize(I), lx, ly, lz );//I is the incident ray dir(from eye to the shading point)
-		
+		vector omega_o = GlobalToLocal( -normalize(I), lx, ly, lz ); //I is the incident ray dir(from eye to the shading point)
+		float    phi_o = atan(omega_o[1], omega_o[0]);
+		float  theta_o = PI * 0.5 - acos(omega_o[2]);
+
 		color singleScatteringResult = 0;
 
 		illuminance(P) //P is the shading point position, a function ofthe surface parameters (u,v)
 		{
-			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz );//L is light ray (from shading point to the light source)
+			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); //L is light ray (from shading point to the light source)
 			 
 			float phi_i = atan(omega_i[1], omega_i[0]);
-			float phi_r = atan(omega_r[1], omega_r[0]);
-			float phi   = abs(phi_r -  phi_i);//relative azimuth (within the normal plane)
+			float phi   = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
+
 			if ( phi > PI )
 				phi -= 2 * PI;
 			phi = abs(phi);
 
 			float theta_i = PI * 0.5 - acos(omega_i[2]);
-			float theta_r = PI * 0.5 - acos(omega_r[2]);
-			float theta   = theta_i + theta_r;
+			float theta   = theta_i + theta_o;
 			
 			float theta_h = theta * 0.5;//half longitudial angle (dir wrt the normal plane)
 
