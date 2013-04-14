@@ -1,8 +1,8 @@
 class single_scattering_AFC(
-	uniform color colorR = color(1, 0, 0);
-	uniform float intensityR = 0.7;
-	uniform float longitudinalShiftR = 7.5;
-	uniform float longitudinalWidthR = 0.3;
+	uniform color colorR = color(0.86, 0.67, 0.21);
+	uniform float intensityR = 0.3;
+	uniform float longitudinalShiftR = -7.5;//[-10,-5]
+	uniform float longitudinalWidthR = 5.0;//[5, 10]
 
 	uniform color colorTT = color(0, 1, 0);
 	uniform float intensityTT = 0.5;
@@ -14,14 +14,14 @@ class single_scattering_AFC(
 	uniform float intensityTRT = 0.5;
 	uniform float longitudinalShiftTRT = 11.25;
 	uniform float longitudinalWidthTRT = 15;
-
+	
 	uniform float intensityG = 0.2;
 	uniform float azimuthalWidthG = 10;)//equivalent to frequency
 {
-    float g(float variance,x;)
+	//unit-integral zero-mean Gaussian function
+    float g(float deviation, x;)
     {
-       return exp(-x*x*0.5/variance)/sqrt(2*PI*variance);
-	   //return exp(- pow(x, 2.0) * 0.5 / pow(variance, 2.0));
+       return exp(-x*x/(2*deviation*deviation))/(deviation*sqrt(2*PI));
     }
 
     color R(float theta_h, phi;)
@@ -36,7 +36,6 @@ class single_scattering_AFC(
 
     color TT(float theta_h, phi;)
 	{
-
 		float alpha_TT = radians(longitudinalShiftTT);
         float beta_TT  = radians(longitudinalWidthTT);
         float gamma_TT = radians(azimuthalWidthTT);
@@ -73,21 +72,22 @@ class single_scattering_AFC(
     }
     public void surface(output color Ci, Oi;)
     {
-		// Get local frame
-		vector lx  =   normalize(-dPdu);
+		// Get unit vectors along local coordinates
+		vector lx  =   normalize(dPdu);
 		vector ly  =   normalize(N);//the shading normal
-		vector lz  =   normalize(-dPdv);	
+		vector lz  =   normalize(dPdv);	
+		
         
-        vector omega_r = GlobalToLocal(-normalize(I), lx, ly, lz);//I is the incident ray dir(from eye to the shading point) in local coordinate
+        vector omega_r = GlobalToLocal(-normalize(I), lx, ly, lz);//I is the incident ray dir(from eye to the shading point)
 		
 		color singleScatteringResult = 0;
 
 		illuminance(P)//P is the shading point position, a function ofthe surface parameters (u,v)
 		{
 			vector omega_i = GlobalToLocal(normalize(L), lx, ly, lz);//light ray (from shading point to the light source)
-			
-			float phi_i = atan(omega_i[1] - omega_i[0]);
-			float phi_r = atan(omega_r[1] - omega_r[0]);
+			 
+			float phi_i = atan(omega_i[1], omega_i[0]);
+			float phi_r = atan(omega_r[1], omega_r[0]);
 
 			float phi = abs(phi_r -  phi_i);//relative azimuth
             if ( phi > PI )
@@ -109,7 +109,7 @@ class single_scattering_AFC(
 			//singleScatteringResult += (f_TRT)/(cos(theta)*cos(theta));
 		
 		}
-		Oi = Os;
+		Oi = Os;//surface opacity
 		Ci = singleScatteringResult * Oi;
 	
     }
