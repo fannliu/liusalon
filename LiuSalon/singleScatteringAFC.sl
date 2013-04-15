@@ -2,21 +2,21 @@ class single_scattering_AFC(
 	uniform color PrimaryHL_Color        = color(0.86, 0.67, 0.21);
 	uniform float PrimaryHL_Intensity    = 0.1;
 	uniform float PrimaryHL_LongituShift = -4.5;//[-10, -5]
-	uniform float PrimaryHL_LongituWidth = 2.5; //[  5, 10]
+	uniform float PrimaryHL_LongituWidth = 0.7; //[  5, 10]
 
-	uniform color BacklitRim_Color          = color(0, 1, 0);
-	uniform float BacklitRim_Intensity      = 0.1;
-	uniform float BacklitRim_LongituShift   = 3.75;
-	uniform float BacklitRim_LongituWidth   = 3.75;
-	uniform float BacklitRim_AzimuthalWidth = 3;
+	uniform color BacklitRim_Color          = color(0.89, 0.98, 0.35);
+	uniform float BacklitRim_Intensity      = 0.05; 
+	uniform float BacklitRim_LongituShift   = 1;//-PrimaryHL_LongituShift/2
+	uniform float BacklitRim_LongituWidth   = 2;   //PrimaryHL_LongituWidth/2
+	uniform float BacklitRim_AzimuthalWidth = 30;
 
-	uniform color SecondaryHL_Color        = color(0, 0, 1);
-	uniform float SecondaryHL_Intensity    = 0.1;
-	uniform float SecondaryHL_LongituShift = 11.25;
-	uniform float SecondaryHL_LongituWidth = 15;
+	uniform color SecondaryHL_Color        = color(0.78, 0.4, 0.86);
+	uniform float SecondaryHL_Intensity    = 0.2;
+	uniform float SecondaryHL_LongituShift = 6.75;//-3*PrimaryHL_LongituShift/2
+	uniform float SecondaryHL_LongituWidth = 1.4; //2*PrimaryHL_LongituWidth
 	
-	uniform float Glints_Intensity = 0.1;
-	uniform float Glints_Frequency = 0.02;
+	uniform float Glints_Intensity = 0.1; //limit 0.5
+	uniform float Glints_Frequency = 0.02;//[10,25]
 	)
 {
 	//unit-integral zero-mean Gaussian distribution
@@ -41,7 +41,7 @@ class single_scattering_AFC(
 		float beta_TT  = radians(BacklitRim_LongituWidth);
 		float gamma_TT = radians(BacklitRim_AzimuthalWidth);
 
-		float M_TT     = g(beta_TT, theta_h - beta_TT);
+		float M_TT     = g(beta_TT, theta_h - alpha_TT);
 		float N_TT     = g(gamma_TT, PI - phi);
     
 		return BacklitRim_Color * BacklitRim_Intensity * M_TT * N_TT;
@@ -77,9 +77,9 @@ class single_scattering_AFC(
 
     public void surface(output color Ci, Oi;)
     {
-		// Get unit vectors along local coordinates
+		// Get unit vectors along local axis in globle coordinate system
 		vector lx  =  normalize(dPdu);
-		vector ly  =  normalize(N);     //the shading normal
+		vector ly  =  normalize(   N);     //the shading normal
 		vector lz  =  normalize(dPdv);	//hair tangent (from root to tip)
 		
         
@@ -89,7 +89,7 @@ class single_scattering_AFC(
 
 		color singleScatteringResult = 0;
 
-		illuminance(P) //P is the shading point position, a function ofthe surface parameters (u,v)
+		illuminance(P) //P is the shading point position, a function of (u,v)
 		{
 			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); //L is light ray (from shading point to the light source)
 			 
@@ -108,7 +108,7 @@ class single_scattering_AFC(
 			color f_R   =   R(theta_h, phi);
 			color f_TT  =  TT(theta_h, phi);
 			color f_TRT = TRT(theta_h, phi);
-			singleScatteringResult += ( f_R  + f_TT + f_TRT ) / ( cos(theta)*cos(theta) );
+			singleScatteringResult += ( f_R  + f_TT + f_TRT ) / ( cos(theta) * cos(theta) );
 		}
 
 		Oi = Os; //Os is the surface opacity
