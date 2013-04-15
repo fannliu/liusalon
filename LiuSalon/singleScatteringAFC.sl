@@ -1,28 +1,29 @@
 class single_scattering_AFC(
 	uniform color PrimaryHL_Color        = color(0.86, 0.67, 0.21);
 	uniform float PrimaryHL_Intensity    = 0.1;
-	uniform float PrimaryHL_LongituShift = -4.5;//[-10, -5]
-	uniform float PrimaryHL_LongituWidth = 0.7; //[  5, 10]
+	uniform float PrimaryHL_LongituShift = -4.5;   //[-10, -5]
+	uniform float PrimaryHL_LongituWidth = 0.7;    //[  5, 10]
 
 	uniform color BacklitRim_Color          = color(0.89, 0.98, 0.35);
 	uniform float BacklitRim_Intensity      = 0.05; 
-	uniform float BacklitRim_LongituShift   = 1;//-PrimaryHL_LongituShift/2
+	uniform float BacklitRim_LongituShift   = 1;   //-PrimaryHL_LongituShift/2
 	uniform float BacklitRim_LongituWidth   = 2;   //PrimaryHL_LongituWidth/2
 	uniform float BacklitRim_AzimuthalWidth = 30;
 
 	uniform color SecondaryHL_Color        = color(0.78, 0.4, 0.86);
-	uniform float SecondaryHL_Intensity    = 0.2;
-	uniform float SecondaryHL_LongituShift = 6.75;//-3*PrimaryHL_LongituShift/2
-	uniform float SecondaryHL_LongituWidth = 1.4; //2*PrimaryHL_LongituWidth
+	uniform float SecondaryHL_Intensity    = 0.1;
+	uniform float SecondaryHL_LongituShift = -2;   //-3*PrimaryHL_LongituShift/2
+	uniform float SecondaryHL_LongituWidth = 1.4;  //2*PrimaryHL_LongituWidth
 	
-	uniform float Glints_Intensity = 0.1; //limit 0.5
-	uniform float Glints_Frequency = 0.02;//[10,25]
+	uniform float Glints_Intensity = 0.8;          //limit 0.5
+	uniform float Glints_AzimuthalShift = 35;      //random per strand[30, 40]
+	uniform float Glints_AzimuthalWidth = 0.3;     //[0,1] eqv to frequency
 	)
 {
 	//unit-integral zero-mean Gaussian distribution
     float g(float deviation, x;)
     {
-       return exp(-x*x/(2*deviation*deviation))/(deviation*sqrt(2*PI));
+       return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
     }
 
     color R(float theta_h, phi;)
@@ -32,6 +33,7 @@ class single_scattering_AFC(
 
 		float M_R     = g(beta_R, theta_h - alpha_R);
 		float N_R     = cos(phi * 0.5);
+
 		return PrimaryHL_Color * PrimaryHL_Intensity * M_R * N_R;
     }
 
@@ -52,8 +54,8 @@ class single_scattering_AFC(
 		float alpha_TRT     = radians(SecondaryHL_LongituShift);
 		float beta_TRT      = radians(SecondaryHL_LongituWidth);
 
-		float G_angle       = radians(30);//random between 30-45
-		float gamma_G       = radians(Glints_Frequency);
+		float G_angle       = radians(Glints_AzimuthalShift);
+		float gamma_G       = radians(Glints_AzimuthalWidth);
 
 		float M_TRT         = g(beta_TRT, theta_h - alpha_TRT);
         
@@ -79,7 +81,7 @@ class single_scattering_AFC(
     {
 		// Get unit vectors along local axis in globle coordinate system
 		vector lx  =  normalize(dPdu);
-		vector ly  =  normalize(   N);     //the shading normal
+		vector ly  =  normalize(   N);  //the shading normal
 		vector lz  =  normalize(dPdv);	//hair tangent (from root to tip)
 		
         
@@ -92,9 +94,8 @@ class single_scattering_AFC(
 		illuminance(P) //P is the shading point position, a function of (u,v)
 		{
 			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); //L is light ray (from shading point to the light source)
-			 
-			float phi_i = atan(omega_i[1], omega_i[0]);
-			float phi   = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
+			float phi_i    = atan(omega_i[1], omega_i[0]);
+			float phi      = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
 
 			if ( phi > PI )
 				phi -= 2 * PI;
@@ -102,8 +103,7 @@ class single_scattering_AFC(
 
 			float theta_i = PI * 0.5 - acos(omega_i[2]);
 			float theta   = theta_i + theta_o;
-			
-			float theta_h = theta * 0.5;//half longitudial angle (dir wrt the normal plane)
+			float theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 
 			color f_R   =   R(theta_h, phi);
 			color f_TT  =  TT(theta_h, phi);
