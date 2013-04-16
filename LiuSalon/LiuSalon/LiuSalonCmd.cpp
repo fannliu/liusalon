@@ -38,7 +38,7 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 	// create cyHairFile object for storing hair data
 	// now create the hair
 	cyHairFile* h = new cyHairFile();
-	int hairCount = h->LoadFromFile("C:/Users/adair/Documents/GitHub/liusalon/LiuSalon/LiuSalon/hairFiles/straight.hair");
+	int hairCount = h->LoadFromFile("D:/SCHOOL/2012-2013/SPRING/cis660/liusalon/LiuSalon/LiuSalon/hairFiles/straight.hair");
 	MGlobal::executeCommand(MString("print ")+ hairCount);
 
 
@@ -53,7 +53,7 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 
 	int num_of_segments = h->GetHeader().d_segments;
 
-	hairCount = 50;
+	hairCount = 1000;
 
 	for(int i=0; i< hairCount; ++i){
 		
