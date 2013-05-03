@@ -165,7 +165,7 @@ MObject HairModelNode::createMesh(MObject& outData, MStatus& stat, cyHairFile& h
 		// get number of segments on this strand
 		if(hasSegments)
 			numSegments = segments[i];
-		for (int j = 0; j < numSegments; j++)
+		for (int j = 0; j <= numSegments; j++)
 		{
 			MPointArray cvertexArray;  // The vertices of the geometry.
 			MIntArray cpolygonCounts;  // Array of # of vertices per face.
@@ -182,7 +182,6 @@ MObject HairModelNode::createMesh(MObject& outData, MStatus& stat, cyHairFile& h
 
 			index += 3;
 		}
-		index += 3; // skip the last point
 	}
 
 	numVertices = vertexArray.length();

@@ -144,7 +144,7 @@ class dual_scattering_AFC(
 		alpha_f;
 		alpha_b;
 
-		//average forward/backward scattering deviation
+		//average forward/backward scattering deviation/width
 		beta_f;
 		beta_b;
 
