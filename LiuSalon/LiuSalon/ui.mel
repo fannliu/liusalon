@@ -126,6 +126,17 @@ global proc createHairModelFromSelected()
     string $shader_path = `fileDialog -directoryMask "*.sdl" -title "Open Hair Shader File"`;
     string $surface_shader = DL_createSurfaceShader( $shader_path, 1);
     DL_setAssignmentPanelAttrib("object", "surface", $surface_shader );
+    // make it assign geometry attribute
+    $new_node = DGA_create();
+    DGA_outputMayaCurvesCreateAttr($new_node);
+    DGA_startWidthCreateAttr($new_node);
+    DGA_endWidthCreateAttr($new_node);
+    setAttr ($new_node + ".outputMayaCurves") 1;
+    setAttr ($new_node + ".startWidth") 0.07;
+    setAttr ($new_node + ".endWidth") 0.07;
+    // create a light illumination attribute
+    DGA_illuminationFromCreateAttr($new_node);
+    DL_setAssignmentPanelAttrib("object", "delightGeoAttribs", $new_node);
     select $surface_shader;
 }
 

@@ -38,7 +38,7 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 	// create cyHairFile object for storing hair data
 	// now create the hair
 	cyHairFile* h = new cyHairFile();
-	int hairCount = h->LoadFromFile("C:/Users/adair/Documents/GitHub/liusalon/Model/HAIR/straight.hair");
+	int hairCount = h->LoadFromFile("D:/SCHOOL/2012-2013/SPRING/cis660/liusalon/LiuSalon/LiuSalon/hairFiles/straight.hair");
 	MGlobal::executeCommand(MString("print ")+ hairCount);
 
 
@@ -53,7 +53,7 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 
 	int num_of_segments = h->GetHeader().d_segments;
 
-	hairCount = 5000;
+	hairCount = 10000;
 
 	for(int i=0; i< hairCount; ++i){
 		
@@ -61,14 +61,16 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 		if(hasSegments)
 			num_of_segments = h->GetSegmentsArray()[i];
 
-		MGlobal::executeCommand(MString("circle -radius ") +  h->GetHeader().d_thickness );
-		MString createCurve = MString("curve -d 1 ");
+		//MGlobal::executeCommand(MString("circle -radius ") +  h->GetHeader().d_thickness );
+		//MString ns = num_of_segments + " ";
+		int n = num_of_segments - 1;
+		MString createCurve = MString("curve -d ") + n;
 		for(unsigned int j=0; j< num_of_segments; ++j)
 		{	
 			
 			int currPtIndex = currPtNum * 3;
 
-			//float scale = hasThickness? h->GetThicknessArray()[currPtNum+1] / h->GetThicknessArray()[currPtNum] : 1.0;
+			float scale = hasThickness? h->GetThicknessArray()[currPtNum+1] / h->GetThicknessArray()[currPtNum] : 1.0;
 
 			createCurve  = createCurve + " -p " + h->GetPointsArray()[currPtIndex] 
 						 +    " " + h->GetPointsArray()[currPtIndex+1] 
@@ -78,21 +80,29 @@ MStatus LiuSalonCmd::doIt( const MArgList& args )
 		}
 
 		currPtNum ++;
-		
+	
 		MGlobal::executeCommand( createCurve );
-		MGlobal::executeCommand( MString("extrude -po 1 -et 2 -ucp 1 -fpt true -upn true -sc 1.0")
-										+ " -rsp 1 \"nurbsCircle1\" \"curve1\";");
-		MGlobal::executeCommand( MString("select -r nurbsCircle1; doDelete;") );
-		MGlobal::executeCommand( MString("select -r curve1; doDelete;")       );
+		//MGlobal::executeCommand( MString("extrude -po 1 -et 2 -ucp 1 -fpt true -upn true -sc 1.0")
+		//								+ " -rsp 1 \"nurbsCircle1\" \"curve1\";");
+		//MGlobal::executeCommand( MString("select -r nurbsCircle1; doDelete;") );
+		//MGlobal::executeCommand( MString("select -r curve1; doDelete;")       );
 
 	}
 
-	MString groupExtrudeSurfaces = MString("select -r ");
+	// group the nurbs curves
+	MString groupCurves = MString("select -r ");
+	for(int i=1; i <= hairCount; ++i){
+		groupCurves = groupCurves + "curve" + i + " ";
+	}
+
+	MGlobal::executeCommand(groupCurves +"; group;");
+
+	/*MString groupExtrudeSurfaces = MString("select -r ");
 	for(int i=1; i <= hairCount; ++i){
 		groupExtrudeSurfaces = groupExtrudeSurfaces + "extrudedSurface" + i + " ";
 	}
 
 	MGlobal::executeCommand(groupExtrudeSurfaces +"; group;");
-
+	*/
 	return MStatus::kSuccess;
 }

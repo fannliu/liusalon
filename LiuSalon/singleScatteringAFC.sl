@@ -1,19 +1,19 @@
 class single_scattering_AFC(
-	uniform color PrimaryHL_Color        = color(0.86, 0.67, 0.21);
-	uniform float PrimaryHL_Intensity    = 0.1;
+	uniform color PrimaryHL_Color        = color(0.95,0.85,0.64);
+	uniform float PrimaryHL_Intensity    = 0.7;
 	uniform float PrimaryHL_LongituShift = -4.5;   //[-10, -5]
-	uniform float PrimaryHL_LongituWidth = 0.7;    //[  5, 10]
+	uniform float PrimaryHL_LongituWidth = 2;    //[  5, 10]
 
-	uniform color BacklitRim_Color          = color(0.89, 0.98, 0.35);
-	uniform float BacklitRim_Intensity      = 0.05; 
-	uniform float BacklitRim_LongituShift   = 1;   //-PrimaryHL_LongituShift/2
-	uniform float BacklitRim_LongituWidth   = 2;   //PrimaryHL_LongituWidth/2
+	uniform color BacklitRim_Color          = color(0.80,0.67,0.39);
+	uniform float BacklitRim_Intensity      = 0.5; 
+	uniform float BacklitRim_LongituShift   = 2.25;   //-PrimaryHL_LongituShift/2
+	uniform float BacklitRim_LongituWidth   = 1;   //PrimaryHL_LongituWidth/2
 	uniform float BacklitRim_AzimuthalWidth = 30;
 
-	uniform color SecondaryHL_Color        = color(0.78, 0.4, 0.86);
-	uniform float SecondaryHL_Intensity    = 0.1;
-	uniform float SecondaryHL_LongituShift = -2;   //-3*PrimaryHL_LongituShift/2
-	uniform float SecondaryHL_LongituWidth = 1.4;  //2*PrimaryHL_LongituWidth
+	uniform color SecondaryHL_Color        = color(0.78,0.61,0.21);
+	uniform float SecondaryHL_Intensity    = 1;
+	uniform float SecondaryHL_LongituShift = -4;   //-3*PrimaryHL_LongituShift/2
+	uniform float SecondaryHL_LongituWidth = 4;  //2*PrimaryHL_LongituWidth
 	
 	uniform float Glints_Intensity = 0.8;          //limit 0.5
 	uniform float Glints_AzimuthalShift = 35;      //random per strand[30, 40]
@@ -23,7 +23,7 @@ class single_scattering_AFC(
 	//unit-integral zero-mean Gaussian distribution
     float g(float deviation, x;)
     {
-       return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
+       return exp( - x*x /( 2*deviation*deviation ) );// / ( deviation * sqrt(2*PI) );
     }
 
     color R(float theta_h, phi;)
