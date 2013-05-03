@@ -153,7 +153,7 @@ MObject HairModelNode::createMesh(MObject& outData, MStatus& stat, cyHairFile& h
 	int index = 0;
 	int numSegments = header.d_segments;
 
-	int hasSegments = ((header.arrays & CY_HAIR_FILE_SEGMENTS_BIT) || !header.use_default_seg);
+	int hasSegments = ((header.arrays & CY_HAIR_FILE_SEGMENTS_BIT) || !hair.use_default_seg);
 	int hasThickness = header.arrays & CY_HAIR_FILE_THICKNESS_BIT;
 	
 	if (hasSegments)

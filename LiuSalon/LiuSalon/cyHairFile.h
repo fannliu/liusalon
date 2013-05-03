@@ -31,12 +31,12 @@
 
 // File read errors
 #define CY_HAIR_FILE_ERROR_CANT_OPEN_FILE			-1
-#define CY_HAIR_FILE_ERROR_CANT_READ_HEADER		-2
+#define CY_HAIR_FILE_ERROR_CANT_READ_HEADER		    -2
 #define	CY_HAIR_FILE_ERROR_WRONG_SIGNATURE			-3
-#define	CY_HAIR_FILE_ERROR_READING_SEGMENTS		-4
+#define	CY_HAIR_FILE_ERROR_READING_SEGMENTS		    -4
 #define	CY_HAIR_FILE_ERROR_READING_POINTS			-5
 #define	CY_HAIR_FILE_ERROR_READING_THICKNESS		-6
-#define	CY_HAIR_FILE_ERROR_READING_TRANSPARENCY	-7
+#define	CY_HAIR_FILE_ERROR_READING_TRANSPARENCY	    -7
 #define	CY_HAIR_FILE_ERROR_READING_COLORS			-8
 
 //-------------------------------------------------------------------------------
@@ -53,7 +53,6 @@ struct cyHairFileHeader
 	float			d_thickness;	///< default thickness of hair strands
 	float			d_transparency;	///< default transparency of hair strands
 	float			d_color[3];		///< default color of hair strands
-	bool			use_default_seg; ///< set to true if use default segments
 
 	char			info[CY_HAIR_FILE_INFO_SIZE];	///< information about the file
 };
@@ -129,7 +128,6 @@ public:
 	void SetPointCount( int count )
 	{
 		header.point_count = count;
-		/*
 		if ( points ) {
 			delete [] points;
 			points = new float[ header.point_count*3 ];
@@ -146,7 +144,6 @@ public:
 			delete [] colors;
 			colors = new float[ header.point_count*3 ];
 		}
-		*/
 	}
 	
 	/// LOOK: adding new functions for setting array counts
@@ -157,7 +154,7 @@ public:
 
 		if (!segments) 
 			segments = new unsigned short[count];
-		header.use_default_seg = false;
+		use_default_seg = false;
 	}
 
 	// creates the points array based on count
@@ -192,7 +189,7 @@ public:
 	}
 
 	/// Sets default number of segments for all hair strands, which is used if segments array does not exist.
-	void SetDefaultSegmentCount( int s ) { header.d_segments = s; header.use_default_seg = true; }
+	void SetDefaultSegmentCount( int s ) { header.d_segments = s; use_default_seg = true; }
 
 	/// Sets default hair strand thickness, which is used if thickness array does not exist.
 	void SetDefaultThickness( float t ) { header.d_thickness = t; }
@@ -252,7 +249,7 @@ public:
 			if ( readcount < header.point_count ) _CY_FAILED_RETURN(CY_HAIR_FILE_ERROR_READING_THICKNESS);
 		}
 
-		// Read thickness array
+		// Read transparency array
 		if ( header.arrays & CY_HAIR_FILE_TRANSPARENCY_BIT ) {
 			transparency = new float[ header.point_count ];
 			size_t readcount = fread( transparency, sizeof(float), header.point_count, fp );
@@ -364,6 +361,8 @@ public:
 		return p;
 	}
 
+public:
+	bool			use_default_seg; ///< set to true if use default segments
 
 private:
 	//////////////////////////////////////////////////////////////////////////
