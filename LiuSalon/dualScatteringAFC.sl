@@ -28,14 +28,23 @@ class dual_scattering_AFC(
 	uniform float BackScattering_LongituWidth  = 0.5;
 	)
 {
-	//Defining the uniform parameters unsed
+	//Defining the uniform parameters used in the pre-computation step
 	float R   = 0;
 	float TT  = 1;
-	float TRT = 2
+	float TRT = 2;
+	float d_b = 0.7;
+	float d_f = 0.7;
+
+	color alpha_back, beta_back;
+	color A_b, delta_b, sigma_b;
+
 	//Defining the varying parameters which have different values for each shading point
-	varying float hairs_in_front;
 	varying float phi;
+	varying float theta;
 	varying float theta_h;
+	varying float hairs_in_front;
+	varying color sigma_f;
+	varying color T_f;
 	
     float g(float deviation, x;)
     {	//unit-integral zero-mean Gaussian distribution
@@ -109,26 +118,8 @@ class dual_scattering_AFC(
 			alpha = radians(SecondaryHL_LongituShift);
 			beta  = radians(SecondaryHL_LongituWidth);
 		}
-		return g(beta, theta_h - alpha);
+		return g(beta + sigma_f, theta_h - alpha);
     }
-
-	color compute_f_direct_back(){
-		color f_direct_back = 0;//need to fill
-		return BackScattering_Color * BackScattering_Intensity * f_direct_back;
-	}
-	color compute_f_scatter_back(){
-		color f_scatter_back = 0;//need to fill
-		return BackScattering_Color * BackScattering_Intensity * f_scatter_back;
-	}
-
-	color compute_f_direct_s(){
-		return M(R)*N(R) + M(TT)*N(TT) + M(TRT)*N(TRT);
-	}
-
-	color compute_f_scatter_s(){
-		color f_scatter_s = MG(R)*NG(R) + MG(TT)*NG(TT) + MG(TRT)*NG(TRT);
-		return ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
-	}
 
 	vector GlobalToLocal(vector gv, x, y, z;)
     {
@@ -144,8 +135,15 @@ class dual_scattering_AFC(
 	//pre-computing and tabulating the uniform variables in the Constructor
 	public void construct()
 	{
-	//to-do: pre-computing and tabulating the uniform variables in the contructors
+		alpha_back = radians(BackScattering_LongituShift);
+		beta_back  = radians(BackScattering_LongituWidth);
+
+
+		A_b;//average backscattering attenuation
+		delta_b;//average longitudinal shift
+		sigma_b;//average backscattering variance
 	}
+
     public void surface(output color Ci, Oi;)
     {
 		// Get unit vectors along local axis in globle coordinate system
@@ -157,7 +155,7 @@ class dual_scattering_AFC(
 		vector omega_o = GlobalToLocal( -normalize(I), lx, ly, lz ); //I is the incident ray dir(from eye to the shading point)
 		float    phi_o = atan(omega_o[1], omega_o[0]);
 		float  theta_o = PI * 0.5 - acos(omega_o[2]);
-
+		
 		
 		illuminance(P) //P is the shading point position, a function of (u,v)
 		{
@@ -170,22 +168,39 @@ class dual_scattering_AFC(
 			phi = abs(phi);
 
 			float theta_i = PI * 0.5 - acos(omega_i[2]);
-			float theta   = theta_i + theta_o;
+				  theta   = theta_i + theta_o;
 				  theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 
 			//compute the amount of shadow from the deep shadow maps?????
+			float shadowed = 0;
+			lightsource (¡±out shadow¡±, shadowed);
+			float illuminated = 1 - shadowed;
+			//estimate the number of hairs in front of the shading point
+			hairs_in_front = shadowed * hairs that cast full shadow;
+			//use the number of hairs in front of the shading point to approximate sigma_f
+			sigma_f = hairs_in_front * beta_f;
+			//use the number of hairs in front of the shading point to approximate T_f
+			T_f = d_f * pow(alpha_f, hairs_in_front);
 
 
-			color f_direct_back  = compute_f_direct_back();
-			color f_scatter_back = compute_f_scatter_back();
+			
+			//backscattering for direct and indirect lighting
+			color f_direct_back  =  2 * A_b * g( sigma_b + beta_back, theta_h - delta_b + alpha_back) / (PI * cos(theta) * cos(theta));
+				  f_direct_back = BackScattering_Color * BackScattering_Intensity * f_direct_back;
 
-			color f_direct_s  = compute_f_direct_s();
-			color f_scatter_s = compute_f_scatter_s();
+			color f_scatter_back = 2 * A_b * g( sigma_b + beta, theta_h - delta_b + alpha) / (PI * cos(theta) * cos(theta));
+		          f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
+
+			//single scattering for direct and indirect lighting
+			color f_direct_s  = M(R)*N(R) + M(TT)*N(TT) + M(TRT)*N(TRT);
+			color f_scatter_s = MG(R)*NG(R) + MG(TT)*NG(TT) + MG(TRT)*NG(TRT);
+			f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 			
 			
 			color F_direct = directFraction * ( f_direct_s + f_direct_back);
-			color F_scatter = (T_f - directFraction) * d_f * ( f_scatter_back + f_scatter_s);
+			color F_scatter = (T_f - directFraction) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
 
+			//combine the direct and indirect scattering components
 			Ci  += (F_direct + F_scatter) * cos(theta_i);
 		}
 
