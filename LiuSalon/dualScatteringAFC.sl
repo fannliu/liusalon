@@ -51,7 +51,7 @@ class dual_scattering_AFC(
        return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
     }
 
-	float N(component){
+	float N(float component){
 		if( component == R)
 			return cos(phi * 0.5);
 		
@@ -70,7 +70,7 @@ class dual_scattering_AFC(
 		}
 	}
 
-	float NG(component){
+	float NG(float component){
 		if( component == R)
 			return cos(phi * 0.5);//need integral
 		
@@ -89,7 +89,7 @@ class dual_scattering_AFC(
 		}
 	}
 
-	color M(component)
+	color M(float component)
     {
 		float alpha, beta;
 		if( component == R){
@@ -105,7 +105,7 @@ class dual_scattering_AFC(
 		return g(beta, theta_h - alpha);
     }
 
-	color MG(component)
+	color MG(float component)
     {
 		float alpha, beta;
 		if( component == R){
@@ -141,7 +141,7 @@ class dual_scattering_AFC(
 
 		A_b;//average backscattering attenuation
 		delta_b;//average longitudinal shift
-		sigma_b;//average backscattering variance
+		sigma_b;//average backscattering deviation
 	}
 
     public void surface(output color Ci, Oi;)
@@ -173,10 +173,10 @@ class dual_scattering_AFC(
 
 			//compute the amount of shadow from the deep shadow maps?????
 			float shadowed = 0;
-			lightsource (¡±out shadow¡±, shadowed);
+			lightsource("out_shadow", shadowed);
 			float illuminated = 1 - shadowed;
 			//estimate the number of hairs in front of the shading point
-			hairs_in_front = shadowed * hairs that cast full shadow;
+			hairs_in_front = shadowed * hairs_that_cast_full_shadow;
 			//use the number of hairs in front of the shading point to approximate sigma_f
 			sigma_f = hairs_in_front * beta_f;
 			//use the number of hairs in front of the shading point to approximate T_f
@@ -188,7 +188,7 @@ class dual_scattering_AFC(
 			color f_direct_back  =  2 * A_b * g( sigma_b + beta_back, theta_h - delta_b + alpha_back) / (PI * cos(theta) * cos(theta));
 				  f_direct_back = BackScattering_Color * BackScattering_Intensity * f_direct_back;
 
-			color f_scatter_back = 2 * A_b * g( sigma_b + beta, theta_h - delta_b + alpha) / (PI * cos(theta) * cos(theta));
+			color f_scatter_back = 2 * A_b * g( sigma_b + beta, theta_h - delta_b + alpha_back) / (PI * cos(theta) * cos(theta));
 		          f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
 			//single scattering for direct and indirect lighting
@@ -197,8 +197,8 @@ class dual_scattering_AFC(
 			f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 			
 			
-			color F_direct = directFraction * ( f_direct_s + f_direct_back);
-			color F_scatter = (T_f - directFraction) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
+			color F_direct = illuminated * ( f_direct_s + f_direct_back);
+			color F_scatter = (T_f - illuminated) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
 
 			//combine the direct and indirect scattering components
 			Ci  += (F_direct + F_scatter) * cos(theta_i);
