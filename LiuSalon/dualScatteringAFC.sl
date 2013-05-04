@@ -174,10 +174,21 @@ class dual_scattering_AFC(
 		float  theta_o = PI * 0.5 - acos(omega_o[2]);
 		float alpha_back = radians(BackScattering_LongituShift);
 		float beta_back  = radians(BackScattering_LongituWidth);
-		
-		illuminance(P) //P is the shading point position, a function of (u,v)
+
+        // P is the shading point position, a function of (u,v)
+        // get the shadow map using P
+        shadow_bias = 0.005;
+        shadow_blur = 0.002;
+        shadow_samples = 9;
+        uniform string shadowmap_path = "";
+        attribute("light:user:delight_shadowmap_name", shadowmap_path);
+
+        print(shadowmap_path);
+        float shadow_p = shadow(shadowmap_path, P, "bias", shadow_bias, "samples", shadow_samples, "blur", shadow_blur);
+
+        illuminance(P)
 		{
-			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); //L is light ray (from shading point to the light source)
+			vector omega_i = GlobalToLocal(normalize(L), lx, ly, lz); //L is light ray (from shading point to the light source)
 			float phi_i    = atan(omega_i[1], omega_i[0]);
 				  phi      = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
 
@@ -189,17 +200,17 @@ class dual_scattering_AFC(
 				  theta   = theta_i + theta_o;
 				  theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 
-			//compute the amount of shadow from the deep shadow maps?????
-			float shadowed = 0;
-			lightsource("out_shadow", shadowed);
-			float illuminated = 1 - shadowed;
+			// compute the amount of shadow from the deep shadow maps
+            float shadowed = shadow_p;
+            float illuminated = 1 - shadowed;
+
 			//estimate the number of hairs in front of the shading point
+            hairs_that_cast_full_shadow = 15;
 			hairs_in_front = shadowed * hairs_that_cast_full_shadow;
 			//use the number of hairs in front of the shading point to approximate sigma_f
 			sigma_f = hairs_in_front * beta_f;
 			//use the number of hairs in front of the shading point to approximate T_f
 			T_f = d_f * pow(a_f, hairs_in_front);
-
 
 			
 			//backscattering for direct and indirect lighting

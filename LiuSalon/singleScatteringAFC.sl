@@ -1,6 +1,6 @@
 class single_scattering_AFC(
 	uniform color PrimaryHL_Color        = color(0.95,0.85,0.64);
-	uniform float PrimaryHL_Intensity    = 0.7;
+	uniform float PrimaryHL_Intensity    = 1;
 	uniform float PrimaryHL_LongituShift = -4.5;   //[-10, -5]
 	uniform float PrimaryHL_LongituWidth = 2;    //[  5, 10]
 
@@ -90,6 +90,24 @@ class single_scattering_AFC(
 		float  theta_o = PI * 0.5 - acos(omega_o[2]);
 
 		color singleScatteringResult = 0;
+        
+        /// TESTING FOR DUAL SCATTERING
+        // P is the shading point position, a function of (u,v)
+        // get the shadow map using P
+        float shadow_bias = 0.005;
+        float shadow_blur = 0.002;
+        float shadow_samples = 9;
+        uniform string shadowmap_path = "";
+        attribute("light:user:delight_shadowmap_name", shadowmap_path);
+
+        float shadow_p = shadow(shadowmap_path, P, "bias", shadow_bias, "samples", shadow_samples, "blur", shadow_blur);
+        //if ( shadow_p != 0.0 )
+        //    printf("non-zero shade is %f", shadow_p);
+        //float p1 = -1;
+       // printf("\n%f", p1);
+        if ( shadow_p > 0.0001 || shadow_p < -0.0001)
+            printf("\nnon-zero shade is %f", shadow_p);
+        // END TESTING
 
 		illuminance(P) //P is the shading point position, a function of (u,v)
 		{

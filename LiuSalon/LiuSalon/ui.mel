@@ -140,3 +140,7 @@ global proc createHairModelFromSelected()
     select $surface_shader;
 }
 
+global proc createLightSet()
+{
+
+}
