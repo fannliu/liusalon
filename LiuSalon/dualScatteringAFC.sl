@@ -68,7 +68,7 @@ class dual_scattering_AFC(
     {	//unit-integral zero-mean Gaussian distribution
        return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
     }
-	color M(uniform float component; float theta_h;)
+	color M_(uniform float component; float theta_h;)
     {
 		float alpha_, beta_;
 		if( component == R){
@@ -144,8 +144,6 @@ class dual_scattering_AFC(
 		return result * M_2_PI;
 	}
 
-	
-
 	vector GlobalToLocal(vector gv, x, y, z;)
     {
 		//transform global vector gv by matrix [LocalUnitX, LocalUnitY, LocalUnitZ]
@@ -156,34 +154,190 @@ class dual_scattering_AFC(
 
 		return vector(x_, y_, z_);
     }
-	color singleScatteringIntegral()
-	{
-	}
-	color singleScattering(float theta, phi;)
+	
+	
+	color fs(float theta, phi;)
 	{
 		float theta_h = theta * 0.5;
-		color f_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M(R, theta_h)   * N_(R, phi);
-		color f_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M(TT, theta_h)  * N_(TT, phi);
-		color f_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M(TRT, theta_h) * N_(TRT, phi);
+		color f_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+		color f_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+		color f_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
 
-		return (f_R + f_TT + f_TRT)/(cos(theta) * cos(theta))
+		return (f_R + f_TT + f_TRT)/(cos(theta) * cos(theta));
 	}
 	
-	color normalizedSingleScattering(float theta, phi;)
+	color integrateOverFullSphere()//integrate over the full sphere around the shading point
 	{
-		return singleScattering(theta, phi) / singleScatteringIntegral();
+		uniform float theta, phi;
+		uniform float result = 0.0;
+		
+		for(phi = - PI; phi <= PI; phi += segment)
+			for(theta = - PI; theta <= PI; theta += segment)
+				result += fs(theta, phi);
+		
+		return result;
+		
 	}
 
 	//pre-computing and tabulating the uniform variables in the Constructor
 	void populate_a(uniform float hemisphere; output uniform color a[]) 
     {
-
+		uniform float directTheta = THETA_START;
+        uniform float i;
+        uniform float phi;
+        uniform float thetaH, phiH;
+		
+		
+		
+        for (i = 0; i < tableSize; i += 1) {
+ 
+            uniform color sum = 0.0;
+            for (phiH = - PI; phiH <= PI; phiH += segment) {
+ 
+                uniform color thetaHSum = 0.0;
+                for (thetaH = - M_PI_2; thetaH <= M_PI_2; thetaH += segment) {
+ 
+                    uniform vector wo = (phiH, thetaH, 0);
+                    uniform color phiSum = 0.0;
+                    for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
+                        if (isHemisphere(hemisphere, directTheta, phi, thetaH, phiH) == 0) 
+                            continue;
+                        
+						
+                        uniform vector wi = (phi, directTheta, 0);
+                        uniform color fcos = absColor_(fs_(wo, wi));
+                        phiSum += fcos;
+                    }
+                    phiSum *= segment;
+                    thetaHSum += phiSum;
+                }
+                thetaHSum *= segment;
+                sum += thetaHSum;
+            }
+            sum *= segment;
+ 
+            push( a, invPI * sum);
+            directTheta += segment;
+        }
     }
 	
 	color integrateOverHemisphere(uniform float theta; uniform float hemisphere){
+	    
+		uniform float invCosTheta = max(0, 1 / cos(theta));
+ 
+        uniform float thetaH;
+        uniform float phiH;
+        uniform float phi;
+ 
+        uniform color sum = 0.0;
+		
+		uniform float inv_fs_integral = 1.0 /integrateOverFullSphere();
+		
+        for (phiH = -PI; phiH <= PI; phiH += segment) {
+ 
+            uniform color thetaHSum = 0.0;
+            for (theta_h = - M_PI_2; theta_h <= M_PI_2; theta_h += segment) {
+ 
+                uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(theta_h - theta)/2), 2);
+                
+                uniform color phiSum = 0.0;
+                for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
+                    if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
+                        continue;
+                    uniform float averageTheta = (thetaH + theta) / 2;
+                    uniform float relativeTheta = abs(thetaH - theta) / 2;
+                    uniform float averageAzimuth = (phiH + phi) / 2;
+                    uniform float relativeAzimuth = mod( abs(phiH - phi), doublePI );
+ 
+                    /*uniform float coef_MR = MR_(averageTheta);
+                    uniform float coef_MTT = MTT_(averageTheta);
+                    uniform float coef_MTRT = MTRT_(averageTheta);
+                    uniform color coef_NR = NR_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTT = NTT_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTRT = NTRT_(relativeTheta, relativeAzimuth, averageAzimuth);
+					*/
+					color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
+
+                    uniform color f = (fs_R + fs_TT + fs_TRT) * invCosRelativeThetaPow2 * inv_fs_integral;
+					
+                    phiSum += f;
+                }
+                phiSum *= segment;
+                thetaHSum += phiSum;
+            }
+            thetaHSum *= segment;
+            sum += thetaHSum;
+        }
+        sum *= segment;
+ 
+        return sum;
 	}
-	color integrateOverHemisphereWeighted(uniform float theta; uniform float coef; uniform float hemisphere){
 	
+	color integrateOverHemisphereWeighted(uniform float theta; uniform float coef; uniform float hemisphere){
+
+		
+		uniform float coef_R, coef_TT, coef_TRT;
+        if (coef == 0) {
+            coef_R = radians(PrimaryHL_LongituShift);
+            coef_TT = radians(BacklitRim_LongituShift);
+            coef_TRT= radians(SecondaryHL_LongituShift);
+        }
+        else {
+            coef_R = radians(PrimaryHL_LongituWidth);
+            coef_TT = radians(BacklitRim_LongituWidth);
+            coef_TRT = radians(SecondaryHL_LongituWidth);
+        }
+ 
+        uniform float thetaH;
+        uniform float phiH;
+        uniform float phi;
+		
+		uniform float inv_fs_integral = 1.0 /integrateOverFullSphere();
+		
+		
+        uniform color sum = 0.0;
+        for (phiH= -PI; phiH <= PI; phiH += segment) {
+ 
+            uniform color thetaHSum = 0.0;
+            for (theta_h = -M_PI_2; thetaH <= M_PI_2; thetaH += segment) {
+ 
+                uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(thetaH - theta)/2), 2);
+                
+                uniform color phiSum = 0.0;
+                for (phi = -M_PI_2; phi <= M_PI_2; phi += segment) {
+                    if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
+                        continue;
+                    uniform float averageTheta = (thetaH + theta) / 2;
+                    uniform float relativeTheta = abs(thetaH - theta) / 2;
+                    uniform float averageAzimuth = (phiH + phi) / 2;
+                    uniform float relativeAzimuth = mod( abs(phiH - phi), doublePI );
+                
+                    /*uniform float coef_MR = MR_(averageTheta);
+                    uniform float coef_MTT = MTT_(averageTheta);
+                    uniform float coef_MTRT = MTRT_(averageTheta);
+                    uniform color coef_NR = NR_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTT = NTT_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTRT = NTRT_(relativeTheta, relativeAzimuth, averageAzimuth);*/
+ 
+                    color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
+
+                    uniform color f = (fs_R * coef_R + fs_TT * coef_TT + fs_TRT * coef_TRT) * invCosRelativeThetaPow2 * inv_fs_integral;
+					
+                    phiSum += f;
+                }
+                phiSum *= segment;
+                thetaHSum += phiSum;
+            }
+            thetaHSum *= segment;
+            sum += thetaHSum;
+        }
+        sum *= segment;
+ 
+        return sum;
 	}
 	
 	void populate_alphabeta(uniform float hemisphere; output uniform color target[]; float coef;)
@@ -194,9 +348,9 @@ class dual_scattering_AFC(
         uniform color numerator = 0.0;
  
         for (i = 0; i < tableSize; i++) {
+			  numerator = integrateOverHemisphereWeighted(theta, coef, hemisphere);
             denominator = integrateOverHemisphere(theta, hemisphere);
-              numerator = integrateOverHemisphereWeighted(theta, coef, hemisphere);
- 
+             
             push( target, numerator / denominator );
             theta += segment;
         }
@@ -357,9 +511,9 @@ class dual_scattering_AFC(
 		          f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
 			//single scattering for direct and indirect lighting
-			color f_direct_s  =  M(  R, theta_h) * N_(  R, phi) 
-							  +  M( TT, theta_h) * N_( TT, phi) 
-							  +  M(TRT, theta_h) * N_(TRT, phi);
+			color f_direct_s  =  M_(  R, theta_h) * N_(  R, phi) 
+							  +  M_( TT, theta_h) * N_( TT, phi) 
+							  +  M_(TRT, theta_h) * N_(TRT, phi);
 							  
 			color f_scatter_s = MG(  R, theta_h) * NG(  R) 
 							  + MG( TT, theta_h) * NG( TT) 
