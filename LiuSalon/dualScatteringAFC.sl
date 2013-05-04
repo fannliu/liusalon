@@ -26,22 +26,40 @@ class dual_scattering_AFC(
 	uniform float BackScattering_Intensity     = 0.1;
 	uniform float BackScattering_LongituShift  = -2;
 	uniform float BackScattering_LongituWidth  = 0.5;
+	
 	)
 {
+	constant float R   = 0;
+	constant float TT  = 1;
+	constant float TRT = 2;
+	
+	constant float hemi_f = 0;
+	constant float hemi_b = 1;
+	
+	
+	constant float M_PI_2 = PI * 0.5;
+	constant float M_2_PI = 2.0 / PI;
+	constant float segment = 0.1;
+	constant float tableSize;
+	
+	constant float d_b = 0.7;//backward scattering density factor
+	constant float d_f = 0.7;//forward scattering density factor
+	
+	constant float hairs_that_cast_full_shadow = 15;//not sure??????
+	
 	//Defining the uniform parameters used in the pre-computation step
-	float R   = 0;
-	float TT  = 1;
-	float TRT = 2;
-	float d_b = 0.7;//backward scattering density factor
-	float d_f = 0.7;//forward scattering density factor
-
-	color a_f, a_b, alpha_f, alpha_b, beta_f, beta_b;
-	color A_b, delta_b, sigma_b;
+	uniform color a_f[];
+	uniform color a_b[];
+	uniform color alpha_f[];
+	uniform color alpha_b[];
+	uniform color beta_f[];
+	uniform color beta_b[];
+	
+	uniform color A_b[];
+	uniform color delta_b[];
+	uniform color sigma_b[];
 
 	//Defining the varying parameters which have different values for each shading point
-	varying float phi;
-	varying float theta;
-	varying float theta_h;
 	varying float hairs_in_front;
 	varying color sigma_f;
 	varying color T_f;
@@ -50,8 +68,39 @@ class dual_scattering_AFC(
     {	//unit-integral zero-mean Gaussian distribution
        return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
     }
+	color M_(uniform float component; float theta_h;)
+    {
+		float alpha_, beta_;
+		if( component == R){
+			alpha_ = radians(PrimaryHL_LongituShift);
+			beta_  = radians(PrimaryHL_LongituWidth);
+		}else if( component == TT){
+			alpha_ = radians(BacklitRim_LongituShift);
+			beta_  = radians(BacklitRim_LongituWidth);
+		}else if( component == TRT){
+			alpha_ = radians(SecondaryHL_LongituShift);
+			beta_  = radians(SecondaryHL_LongituWidth);
+		}
+		return g(beta, theta_h - alpha_);
+    }
 
-	float N(float component;){
+	color MG(uniform float component; float theta_h;)
+    {
+		float alpha_, beta_;
+		if( component == R){
+			alpha_ = radians(PrimaryHL_LongituShift);
+			beta_  = radians(PrimaryHL_LongituWidth);
+		}else if( component == TT){
+			alpha_ = radians(BacklitRim_LongituShift);
+			beta_  = radians(BacklitRim_LongituWidth);
+		}else if( component == TRT){
+			alpha_ = radians(SecondaryHL_LongituShift);
+			beta_  = radians(SecondaryHL_LongituWidth);
+		}
+		return g(beta_ + sigma_f, theta_h - alpha_);
+    }
+
+	float N_(uniform float component; float phi;){
 		if( component == R)
 			return cos(phi * 0.5);
 		
@@ -70,56 +119,30 @@ class dual_scattering_AFC(
 		}
 	}
 
-	float NG(float component;){
-		if( component == R)
-			return cos(phi * 0.5);//need integral
-		
-		if( component == TT){
-			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
-			return  g(gamma_TT, PI - phi);//need integral
+	float NG(uniform float component;){
+		float result = 0;
+		if( component == R){
+			for(float phi = M_PI_2; phi <= PI; phi += segment)
+				result += cos(phi * 0.5);
 		}
-		if( component == TRT){
+		else if( component == TT){
+			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
+			for(float phi = M_PI_2; phi <= PI; phi += segment)
+				result += g(gamma_TT, PI - phi);
+		}
+		else if( component == TRT){
 		
 			float G_angle       = radians(Glints_AzimuthalShift);
 			float gamma_G       = radians(Glints_AzimuthalWidth);
-			        
-			float N_TRT_minus_G = cos(phi * 0.5);
-			float N_G           = Glints_Intensity * g(gamma_G, G_angle - phi);
-			return N_TRT_minus_G + N_G;//need integral
+			
+			for(float phi = M_PI_2; phi <= PI; phi += segment){        
+				float N_TRT_minus_G = cos(phi * 0.5);
+				float N_G           = Glints_Intensity * g(gamma_G, G_angle - phi);
+				result += (N_TRT_minus_G + N_G);
+			}
 		}
+		return result * M_2_PI;
 	}
-
-	color M(float component;)
-    {
-		float alpha, beta;
-		if( component == R){
-			alpha = radians(PrimaryHL_LongituShift);
-			beta  = radians(PrimaryHL_LongituWidth);
-		}else if( component == TT){
-			alpha = radians(BacklitRim_LongituShift);
-			beta  = radians(BacklitRim_LongituWidth);
-		}else if( component == TRT){
-			alpha = radians(SecondaryHL_LongituShift);
-			beta  = radians(SecondaryHL_LongituWidth);
-		}
-		return g(beta, theta_h - alpha);
-    }
-
-	color MG(float component;)
-    {
-		float alpha, beta;
-		if( component == R){
-			alpha = radians(PrimaryHL_LongituShift);
-			beta  = radians(PrimaryHL_LongituWidth);
-		}else if( component == TT){
-			alpha = radians(BacklitRim_LongituShift);
-			beta  = radians(BacklitRim_LongituWidth);
-		}else if( component == TRT){
-			alpha = radians(SecondaryHL_LongituShift);
-			beta  = radians(SecondaryHL_LongituWidth);
-		}
-		return g(beta + sigma_f, theta_h - alpha);
-    }
 
 	vector GlobalToLocal(vector gv, x, y, z;)
     {
@@ -131,36 +154,306 @@ class dual_scattering_AFC(
 
 		return vector(x_, y_, z_);
     }
-
-	//pre-computing and tabulating the uniform variables in the Constructor
-	public void construct()
+	
+	
+	color fs(float theta, phi;)
 	{
+		float theta_h = theta * 0.5;
+		color f_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+		color f_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+		color f_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
+
+		return (f_R + f_TT + f_TRT)/(cos(theta) * cos(theta));
+	}
+	
+	color integrateOverFullSphere()//integrate over the full sphere around the shading point
+	{
+		uniform float theta, phi;
+		uniform float result = 0.0;
 		
-		//average forward/backward attenuation
-		a_f;
-		a_b;
-
-		//average forward/backward scattering shift
-		alpha_f;
-		alpha_b;
-
-		//average forward/backward scattering deviation/width
-		beta_f;
-		beta_b;
-
-		//average backscattering attenuation
-		A_b = a_b * pow(a_f,2) / (1 - a_f*a_f) + pow(a_b,3) * pow(a_f,2)/pow(1-a_f*a_f, 2);
+		for(phi = - PI; phi <= PI; phi += segment)
+			for(theta = - PI; theta <= PI; theta += segment)
+				result += fs(theta, phi);
 		
-		//average longitudinal shift
-		delta_b = alpha_b * (1 - 2*a_b*a_b/pow(1-a_f*a_f,2)) 
-				+ alpha_f * ( 2*pow(1-a_f*a_f,2)+ 4*pow(a_f,2)*pow(a_b,2) )/pow(1-a_f*a_f, 3);
-
-		//average backscattering deviation
-		sigma_b = (1 + d_b * pow(a_f,2)) 
-				*( a_b*sqrt(2*pow(beta_f,2) + pow(beta_b,2)) + pow(a_b,3)*sqrt(2*pow(beta_f,2) + pow(beta_b,2)) )
-				/ (a_b + pow(a_b,3)*(2*beta_f + 3*beta_b);
+		return result;
+		
 	}
 
+	//pre-computing and tabulating the uniform variables in the Constructor
+	void populate_a(uniform float hemisphere; output uniform color a[]) 
+    {
+		uniform float directTheta = THETA_START;
+        uniform float i;
+        uniform float phi;
+        uniform float thetaH, phiH;
+		
+		
+		
+        for (i = 0; i < tableSize; i += 1) {
+ 
+            uniform color sum = 0.0;
+            for (phiH = - PI; phiH <= PI; phiH += segment) {
+ 
+                uniform color thetaHSum = 0.0;
+                for (thetaH = - M_PI_2; thetaH <= M_PI_2; thetaH += segment) {
+ 
+                    uniform vector wo = (phiH, thetaH, 0);
+                    uniform color phiSum = 0.0;
+                    for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
+                        if (isHemisphere(hemisphere, directTheta, phi, thetaH, phiH) == 0) 
+                            continue;
+                        
+						
+                        uniform vector wi = (phi, directTheta, 0);
+                        uniform color fcos = absColor_(fs_(wo, wi));
+                        phiSum += fcos;
+                    }
+                    phiSum *= segment;
+                    thetaHSum += phiSum;
+                }
+                thetaHSum *= segment;
+                sum += thetaHSum;
+            }
+            sum *= segment;
+ 
+            push( a, invPI * sum);
+            directTheta += segment;
+        }
+    }
+	
+	color integrateOverHemisphere(uniform float theta; uniform float hemisphere){
+	    
+		uniform float invCosTheta = max(0, 1 / cos(theta));
+ 
+        uniform float thetaH;
+        uniform float phiH;
+        uniform float phi;
+ 
+        uniform color sum = 0.0;
+		
+		uniform float inv_fs_integral = 1.0 /integrateOverFullSphere();
+		
+        for (phiH = -PI; phiH <= PI; phiH += segment) {
+ 
+            uniform color thetaHSum = 0.0;
+            for (theta_h = - M_PI_2; theta_h <= M_PI_2; theta_h += segment) {
+ 
+                uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(theta_h - theta)/2), 2);
+                
+                uniform color phiSum = 0.0;
+                for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
+                    if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
+                        continue;
+                    uniform float averageTheta = (thetaH + theta) / 2;
+                    uniform float relativeTheta = abs(thetaH - theta) / 2;
+                    uniform float averageAzimuth = (phiH + phi) / 2;
+                    uniform float relativeAzimuth = mod( abs(phiH - phi), doublePI );
+ 
+                    /*uniform float coef_MR = MR_(averageTheta);
+                    uniform float coef_MTT = MTT_(averageTheta);
+                    uniform float coef_MTRT = MTRT_(averageTheta);
+                    uniform color coef_NR = NR_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTT = NTT_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTRT = NTRT_(relativeTheta, relativeAzimuth, averageAzimuth);
+					*/
+					color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
+
+                    uniform color f = (fs_R + fs_TT + fs_TRT) * invCosRelativeThetaPow2 * inv_fs_integral;
+					
+                    phiSum += f;
+                }
+                phiSum *= segment;
+                thetaHSum += phiSum;
+            }
+            thetaHSum *= segment;
+            sum += thetaHSum;
+        }
+        sum *= segment;
+ 
+        return sum;
+	}
+	
+	color integrateOverHemisphereWeighted(uniform float theta; uniform float coef; uniform float hemisphere){
+
+		
+		uniform float coef_R, coef_TT, coef_TRT;
+        if (coef == 0) {
+            coef_R = radians(PrimaryHL_LongituShift);
+            coef_TT = radians(BacklitRim_LongituShift);
+            coef_TRT= radians(SecondaryHL_LongituShift);
+        }
+        else {
+            coef_R = radians(PrimaryHL_LongituWidth);
+            coef_TT = radians(BacklitRim_LongituWidth);
+            coef_TRT = radians(SecondaryHL_LongituWidth);
+        }
+ 
+        uniform float thetaH;
+        uniform float phiH;
+        uniform float phi;
+		
+		uniform float inv_fs_integral = 1.0 /integrateOverFullSphere();
+		
+		
+        uniform color sum = 0.0;
+        for (phiH= -PI; phiH <= PI; phiH += segment) {
+ 
+            uniform color thetaHSum = 0.0;
+            for (theta_h = -M_PI_2; thetaH <= M_PI_2; thetaH += segment) {
+ 
+                uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(thetaH - theta)/2), 2);
+                
+                uniform color phiSum = 0.0;
+                for (phi = -M_PI_2; phi <= M_PI_2; phi += segment) {
+                    if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
+                        continue;
+                    uniform float averageTheta = (thetaH + theta) / 2;
+                    uniform float relativeTheta = abs(thetaH - theta) / 2;
+                    uniform float averageAzimuth = (phiH + phi) / 2;
+                    uniform float relativeAzimuth = mod( abs(phiH - phi), doublePI );
+                
+                    /*uniform float coef_MR = MR_(averageTheta);
+                    uniform float coef_MTT = MTT_(averageTheta);
+                    uniform float coef_MTRT = MTRT_(averageTheta);
+                    uniform color coef_NR = NR_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTT = NTT_(relativeTheta, relativeAzimuth);
+                    uniform color coef_NTRT = NTRT_(relativeTheta, relativeAzimuth, averageAzimuth);*/
+ 
+                    color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
+
+                    uniform color f = (fs_R * coef_R + fs_TT * coef_TT + fs_TRT * coef_TRT) * invCosRelativeThetaPow2 * inv_fs_integral;
+					
+                    phiSum += f;
+                }
+                phiSum *= segment;
+                thetaHSum += phiSum;
+            }
+            thetaHSum *= segment;
+            sum += thetaHSum;
+        }
+        sum *= segment;
+ 
+        return sum;
+	}
+	
+	void populate_alphabeta(uniform float hemisphere; output uniform color target[]; float coef;)
+    {
+        uniform float theta = - M_PI_2;
+        uniform float i;
+        uniform color denominator = 0.0;
+        uniform color numerator = 0.0;
+ 
+        for (i = 0; i < tableSize; i++) {
+			  numerator = integrateOverHemisphereWeighted(theta, coef, hemisphere);
+            denominator = integrateOverHemisphere(theta, hemisphere);
+             
+            push( target, numerator / denominator );
+            theta += segment;
+        }
+    }
+
+	void populate_A_b(output uniform color A[])
+    {
+        uniform float i;
+ 
+        for (i = 0; i < tableSize; i += 1) {
+            uniform color af = a_f[i];
+            uniform color ab = a_b[i];
+			
+			uniform color afPow2 = pow(af, 2);
+			
+			Ab = ab * afPow2 / (1 - afPow2) + pow(ab,3) * afPow2/pow(1-afPow2, 2);
+			
+            push( A, Ab );
+        }
+    }
+	
+	void populate_delta_b(output uniform color delta[]) 
+    {
+        uniform float i;
+ 
+        for (i = 0; i < tableSize; i++) {
+            uniform color af = a_f[i];
+            uniform color ab = a_b[i];
+			
+			uniform color alphaf = alpha_f[i];
+            uniform color alphab = alpha_b[i];
+			
+			uniform color afPow2 = pow(af, 2);
+			uniform color abPow2 = pow(ab, 2);
+			
+			uniform color deltab = alphab * (1 - 2*abPow2/pow(1-afPow2,2)) 
+				+ alphaf * ( 2*pow(1-afPow2,2)+ 4*afPow2*abPow2 ) / pow(1-afPow2, 3);
+ 
+            push( delta, deltab );
+        }
+    }
+	
+	void populate_sigma_b(output uniform color sigma[])
+    {
+        uniform float i;
+ 
+        for (i = 0; i < tableSize; i++) {
+            uniform color af = a_f[i];
+            uniform color ab = a_b[i];
+            
+            uniform color betaf = beta_f[i];
+            uniform color betab = beta_b[i];
+			
+			uniform color betabPow2 = pow(betab, 2);
+			uniform color betafPow2 = pow(betaf, 2);
+			uniform color abPow3 = pow(ab,3);
+			
+			uniform color sigmab = (1 + d_b * pow(af,2)) * (ab + abPow3) * sqrt(2*betafPow2 + betabPow2)
+									/ ( ab + abPow3*(2*betaf + 3*betab) );
+				
+            push( sigma, sigmab );
+        }
+    }
+	
+	public void construct()
+	{	
+	
+		tableSize = ceil(PI/segment);
+		
+		/*average forward/backward attenuation*/
+		reserve(a_f, tableSize);
+		reserve(a_b, tableSize);
+		populate_a(hemi_f, a_f);
+		populate_a(hemi_b, a_b);
+
+		/*average forward/backward scattering shift*/
+		reserve(alpha_f, tableSize);
+		reserve(alpha_b, tableSize);
+		populate_alphabeta(hemi_f, alpha_f, 0);
+		populate_alphabeta(hemi_b, alpha_b, 0);
+
+		/*average forward/backward scattering deviation/width*/
+		reserve(beta_f, tableSize);
+		reserve(beta_b, tableSize);
+		populate_alphabeta(hemi_f, beta_f, 1);
+		populate_alphabeta(hemi_b, beta_b, 1);
+
+		/*average backscattering attenuation*/
+		reserve(A_b, tableSize);
+		populate_A_b(A_b);
+		
+		
+		/*average longitudinal shift*/
+		reserve(delta_b, tableSize);
+		populate_delta_b(delta_b);
+
+		
+		/*average backscattering deviation*/
+		reserve(sigma_b, tableSize);
+		populate_sigma_b(sigma_b);		
+		
+	}
+	
     public void surface(output color Ci, Oi;)
     {
 		// Get unit vectors along local axis in globle coordinate system
@@ -168,38 +461,42 @@ class dual_scattering_AFC(
 		vector ly  =  normalize(   N);  //the shading normal
 		vector lz  =  normalize(dPdv);	//hair tangent (from root to tip)
 		
-        
-		vector omega_o = GlobalToLocal( -normalize(I), lx, ly, lz ); //I is the incident ray dir(from eye to the shading point)
-		float    phi_o = atan(omega_o[1], omega_o[0]);
-		float  theta_o = PI * 0.5 - acos(omega_o[2]);
+        //I is the incident ray dir(from eye to the shading point)
+		vector   omega_o = GlobalToLocal( -normalize(I), lx, ly, lz ); 
+		float      phi_o = atan(omega_o[1], omega_o[0]);
+		float    theta_o = M_PI_2 - acos(omega_o[2]);
 		float alpha_back = radians(BackScattering_LongituShift);
-		float beta_back  = radians(BackScattering_LongituWidth);
+		float  beta_back = radians(BackScattering_LongituWidth);
 
-        // P is the shading point position, a function of (u,v)
-        // get the shadow map using P
-        shadow_bias = 0.005;
-        shadow_blur = 0.002;
-        shadow_samples = 9;
+        // get deep shadow map value
+        float shadow_bias = 0.005;
+        float shadow_blur = 0.002;
+        float shadow_samples = 9;
         uniform string shadowmap_path = "";
         attribute("light:user:delight_shadowmap_name", shadowmap_path);
 
-        print(shadowmap_path);
         float shadow_p = shadow(shadowmap_path, P, "bias", shadow_bias, "samples", shadow_samples, "blur", shadow_blur);
-
-        illuminance(P)
+ 		
+		illuminance(P) //P is the shading point position, a function of (u,v)
 		{
-			vector omega_i = GlobalToLocal(normalize(L), lx, ly, lz); //L is light ray (from shading point to the light source)
-			float phi_i    = atan(omega_i[1], omega_i[0]);
-				  phi      = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
+			//L is light ray (from shading point to the light source)
+			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); 
+			float    phi_i = atan(omega_i[1], omega_i[0]);
+			float    phi   = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
 
 			if ( phi > PI )
 				phi -= 2 * PI;
 			phi = abs(phi);
 
-			float theta_i = PI * 0.5 - acos(omega_i[2]);
-				  theta   = theta_i + theta_o;
+			float theta_i = M_PI_2 - acos(omega_i[2]);
+			float theta   = theta_i + theta_o;
 				  theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 
+			//interpolate from pre-computation
+			float Ab;
+			float deltab;
+			float sigmab;
+			
 			// compute the amount of shadow from the deep shadow maps
             float shadowed = shadow_p;
             float illuminated = 1 - shadowed;
@@ -214,21 +511,26 @@ class dual_scattering_AFC(
 
 			
 			//backscattering for direct and indirect lighting
-			color f_direct_back  =  2 * A_b * g( sigma_b + beta_back, theta_h - delta_b + alpha_back) 
+			color f_direct_back  =  2 * Ab * g( sigmab + beta_back, theta_h - deltab + alpha_back) 
 									/ (PI * cos(theta) * cos(theta));
 				  f_direct_back = BackScattering_Color * BackScattering_Intensity * f_direct_back;
 
-			color f_scatter_back = 2 * A_b * g( sigma_b + sigma_f + beta_back, theta_h - delta_b + alpha_back) 
+			color f_scatter_back = 2 * Ab * g( sigmab + sigma_f + beta_back, theta_h - deltab + alpha_back) 
 									/ (PI * cos(theta) * cos(theta));
 		          f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
 			//single scattering for direct and indirect lighting
-			color f_direct_s  = M(R)*N(R) + M(TT)*N(TT) + M(TRT)*N(TRT);
-			color f_scatter_s = MG(R)*NG(R) + MG(TT)*NG(TT) + MG(TRT)*NG(TRT);
-			      f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
+			color f_direct_s  =  M_(  R, theta_h) * N_(  R, phi) 
+							  +  M_( TT, theta_h) * N_( TT, phi) 
+							  +  M_(TRT, theta_h) * N_(TRT, phi);
+							  
+			color f_scatter_s = MG(  R, theta_h) * NG(  R) 
+							  + MG( TT, theta_h) * NG( TT) 
+							  + MG(TRT, theta_h) * NG(TRT);
+				  f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 			
 			
-			color F_direct = illuminated * ( f_direct_s + f_direct_back);
+			color F_direct  = illuminated * ( f_direct_s + f_direct_back );
 			color F_scatter = (T_f - illuminated) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
 
 			//combine the direct and indirect scattering components
