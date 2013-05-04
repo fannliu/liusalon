@@ -32,16 +32,18 @@ class dual_scattering_AFC(
 	float R   = 0;
 	float TT  = 1;
 	float TRT = 2;
+	float segment = 0.1;
+
 	float d_b = 0.7;//backward scattering density factor
 	float d_f = 0.7;//forward scattering density factor
+	float M_PI_2 = PI * 0.5;
+	float M_2_PI = 2.0 / PI;
+	
 
 	color a_f, a_b, alpha_f, alpha_b, beta_f, beta_b;
 	color A_b, delta_b, sigma_b;
 
 	//Defining the varying parameters which have different values for each shading point
-	varying float phi;
-	varying float theta;
-	varying float theta_h;
 	varying float hairs_in_front;
 	varying color sigma_f;
 	varying color T_f;
@@ -50,8 +52,39 @@ class dual_scattering_AFC(
     {	//unit-integral zero-mean Gaussian distribution
        return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
     }
+	color M(float component, theta_h;)
+    {
+		float alpha, beta;
+		if( component == R){
+			alpha = radians(PrimaryHL_LongituShift);
+			beta  = radians(PrimaryHL_LongituWidth);
+		}else if( component == TT){
+			alpha = radians(BacklitRim_LongituShift);
+			beta  = radians(BacklitRim_LongituWidth);
+		}else if( component == TRT){
+			alpha = radians(SecondaryHL_LongituShift);
+			beta  = radians(SecondaryHL_LongituWidth);
+		}
+		return g(beta, theta_h - alpha);
+    }
 
-	float N(float component;){
+	color MG(float component, theta_h;)
+    {
+		float alpha, beta;
+		if( component == R){
+			alpha = radians(PrimaryHL_LongituShift);
+			beta  = radians(PrimaryHL_LongituWidth);
+		}else if( component == TT){
+			alpha = radians(BacklitRim_LongituShift);
+			beta  = radians(BacklitRim_LongituWidth);
+		}else if( component == TRT){
+			alpha = radians(SecondaryHL_LongituShift);
+			beta  = radians(SecondaryHL_LongituWidth);
+		}
+		return g(beta + sigma_f, theta_h - alpha);
+    }
+
+	float N(float component, phi;){
 		if( component == R)
 			return cos(phi * 0.5);
 		
@@ -70,56 +103,32 @@ class dual_scattering_AFC(
 		}
 	}
 
-	float NG(float component;){
-		if( component == R)
-			return cos(phi * 0.5);//need integral
-		
-		if( component == TT){
-			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
-			return  g(gamma_TT, PI - phi);//need integral
+	float NG(float component){
+		float result = 0;
+		if( component == R){
+			for(float phi = M_PI_2; phi <= PI; phi += segment)
+				result += cos(phi * 0.5);
 		}
-		if( component == TRT){
+		else if( component == TT){
+			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
+			for(float phi = M_PI_2; phi <= PI; phi += segment)
+				result += g(gamma_TT, PI - phi);
+		}
+		else if( component == TRT){
 		
 			float G_angle       = radians(Glints_AzimuthalShift);
 			float gamma_G       = radians(Glints_AzimuthalWidth);
-			        
-			float N_TRT_minus_G = cos(phi * 0.5);
-			float N_G           = Glints_Intensity * g(gamma_G, G_angle - phi);
-			return N_TRT_minus_G + N_G;//need integral
+			
+			for(float phi = M_PI_2; phi <= PI; phi += segment){        
+				float N_TRT_minus_G = cos(phi * 0.5);
+				float N_G           = Glints_Intensity * g(gamma_G, G_angle - phi);
+				result += (N_TRT_minus_G + N_G);
+			}
 		}
+		return result * M_2_PI;
 	}
 
-	color M(float component;)
-    {
-		float alpha, beta;
-		if( component == R){
-			alpha = radians(PrimaryHL_LongituShift);
-			beta  = radians(PrimaryHL_LongituWidth);
-		}else if( component == TT){
-			alpha = radians(BacklitRim_LongituShift);
-			beta  = radians(BacklitRim_LongituWidth);
-		}else if( component == TRT){
-			alpha = radians(SecondaryHL_LongituShift);
-			beta  = radians(SecondaryHL_LongituWidth);
-		}
-		return g(beta, theta_h - alpha);
-    }
-
-	color MG(float component;)
-    {
-		float alpha, beta;
-		if( component == R){
-			alpha = radians(PrimaryHL_LongituShift);
-			beta  = radians(PrimaryHL_LongituWidth);
-		}else if( component == TT){
-			alpha = radians(BacklitRim_LongituShift);
-			beta  = radians(BacklitRim_LongituWidth);
-		}else if( component == TRT){
-			alpha = radians(SecondaryHL_LongituShift);
-			beta  = radians(SecondaryHL_LongituWidth);
-		}
-		return g(beta + sigma_f, theta_h - alpha);
-    }
+	
 
 	vector GlobalToLocal(vector gv, x, y, z;)
     {
@@ -131,7 +140,22 @@ class dual_scattering_AFC(
 
 		return vector(x_, y_, z_);
     }
+	color singleScatteringIntegral()
+	{
+	}
+	color singleScattering(float theta, phi;)
+	{
+		float theta_h = theta * 0.5;
+		color f_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M(R, theta_h)   * N(R, phi);
+		color f_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M(TT, theta_h)  * N(TT, phi);
+		color f_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M(TRT, theta_h) * N(TRT, phi);
 
+		return (f_R + f_TT + f_TRT)/(cos(theta) * cos(theta))
+	}
+	color normalizedSingleScattering(float theta, phi;)
+	{
+		return singleScattering(theta, phi) / singleScatteringIntegral();
+	}
 	//pre-computing and tabulating the uniform variables in the Constructor
 	public void construct()
 	{
@@ -171,7 +195,7 @@ class dual_scattering_AFC(
         
 		vector omega_o = GlobalToLocal( -normalize(I), lx, ly, lz ); //I is the incident ray dir(from eye to the shading point)
 		float    phi_o = atan(omega_o[1], omega_o[0]);
-		float  theta_o = PI * 0.5 - acos(omega_o[2]);
+		float  theta_o = M_PI_2 - acos(omega_o[2]);
 		float alpha_back = radians(BackScattering_LongituShift);
 		float beta_back  = radians(BackScattering_LongituWidth);
 		
@@ -179,14 +203,14 @@ class dual_scattering_AFC(
 		{
 			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); //L is light ray (from shading point to the light source)
 			float phi_i    = atan(omega_i[1], omega_i[0]);
-				  phi      = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
+			float phi      = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
 
 			if ( phi > PI )
 				phi -= 2 * PI;
 			phi = abs(phi);
 
-			float theta_i = PI * 0.5 - acos(omega_i[2]);
-				  theta   = theta_i + theta_o;
+			float theta_i = M_PI_2 - acos(omega_i[2]);
+			float theta   = theta_i + theta_o;
 				  theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 
 			//compute the amount of shadow from the deep shadow maps?????
@@ -212,8 +236,8 @@ class dual_scattering_AFC(
 		          f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
 			//single scattering for direct and indirect lighting
-			color f_direct_s  = M(R)*N(R) + M(TT)*N(TT) + M(TRT)*N(TRT);
-			color f_scatter_s = MG(R)*NG(R) + MG(TT)*NG(TT) + MG(TRT)*NG(TRT);
+			color f_direct_s  =  M(R, theta_h)* N(R, phi) +  M(TT, theta_h)*  N(TT, phi) +  M(TRT, theta_h)* N(TRT, phi);
+			color f_scatter_s = MG(R, theta_h)*NG(R) + MG(TT, theta_h)* NG(TT) + MG(TRT, theta_h)*NG(TRT);
 			      f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 			
 			
