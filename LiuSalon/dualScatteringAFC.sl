@@ -67,10 +67,19 @@ class dual_scattering_AFC(
 	varying float hairs_in_front;
 	varying color sigma_f;
 	varying color T_f;
-	
-   float g(float deviation, x;)
+
+   
+    float g(float deviation, x;)
     {	//unit-integral zero-mean Gaussian distribution
        return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
+    }
+	
+	color color_g(color deviation, x;){
+		color result;
+		result[0] = exp( - pow(x[0],2) /( 2* pow(deviation[0],2) ) ) / ( deviation[0] * sqrt(2*PI) );
+		result[1] = exp( - pow(x[1],2) /( 2* pow(deviation[1],2) ) ) / ( deviation[1] * sqrt(2*PI) );
+		result[2] = exp( - pow(x[2],2) /( 2* pow(deviation[2],2) ) ) / ( deviation[2] * sqrt(2*PI) );
+		return result;
     }
 	color M_(uniform float component; float theta_h;)
     {
@@ -101,7 +110,8 @@ class dual_scattering_AFC(
 			alpha_ = radians(SecondaryHL_LongituShift);
 			beta_  = radians(SecondaryHL_LongituWidth);
 		}
-		return g(beta_ + sigma_f, theta_h - alpha_);
+		
+		return g(beta_ /*+ sigma_f*/, theta_h - alpha_);
     }
 
 	float N_(uniform float component; float phi;){
@@ -194,11 +204,11 @@ class dual_scattering_AFC(
 		color f = fs(theta, phi);
 		return color(f[0]/fs_integral[0], f[1]/fs_integral[1], f[2]/fs_integral[2]);
 	}
-	color color_abs(uniform color x){
+	color color_abs(color x){
 		return color(abs(x[0]), abs(x[1]), abs(x[2]));
 	}
 
-	color color_pow(uniform color x; uniform float n;){
+	color color_pow(color x; float n;){
 		return color(pow(x[0],n), pow(x[1],n), pow(x[2],n));
 	}
 	
@@ -589,6 +599,9 @@ class dual_scattering_AFC(
 			color     Ab = interpolate_theta_i(    A_b, theta_i);
 			color deltab = interpolate_theta_i(delta_b, theta_i);
 			color sigmab = interpolate_theta_i(sigma_b, theta_i);
+			
+			color  betaf = interpolate_theta_i( beta_f, theta_i);
+			color     af = interpolate_theta_i(    a_f, theta_i);
 
 			// compute the amount of shadow from the deep shadow maps
             float shadowed = shadow_p;
@@ -597,17 +610,17 @@ class dual_scattering_AFC(
 			//estimate the number of hairs in front of the shading point
 			hairs_in_front = shadowed * hairs_that_cast_full_shadow;
 			//use the number of hairs in front of the shading point to approximate sigma_f
-			sigma_f = hairs_in_front * beta_f;
+			sigma_f = hairs_in_front * betaf;
 			//use the number of hairs in front of the shading point to approximate T_f
-			T_f = d_f * pow(a_f, hairs_in_front);
+			T_f = d_f * color_pow(af, hairs_in_front);
 
 
 			//backscattering for direct and indirect lighting
-			color f_direct_back  =  2 * Ab * g( sigmab + beta_back, theta_h - deltab + alpha_back) 
+			color f_direct_back  =  2 * Ab * color_g( sigmab + beta_back, theta_h - deltab + alpha_back) 
 									/ (PI * cos(theta) * cos(theta));
 				  f_direct_back = BackScattering_Color * BackScattering_Intensity * f_direct_back;
 
-			color f_scatter_back = 2 * Ab * g( sigmab + sigma_f + beta_back, theta_h - deltab + alpha_back) 
+			color f_scatter_back = 2 * Ab * color_g( sigmab + sigma_f + beta_back, theta_h - deltab + alpha_back) 
 									/ (PI * cos(theta) * cos(theta));
 		          f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
