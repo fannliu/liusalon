@@ -38,7 +38,9 @@ class dual_scattering_AFC(
 	
 	
 	constant float M_PI_2 = PI * 0.5;
+	constant float M_1_PI = 1.0 / PI;
 	constant float M_2_PI = 2.0 / PI;
+	
 	constant float segment = 0.1;
 	constant float tableSize;
 	
@@ -178,46 +180,104 @@ class dual_scattering_AFC(
 		return result;
 		
 	}
-
+	
+	color color_abs(uniform color x){
+		return color(abs(x[0]), abs(x[1]), abs(x[2]));
+	}
+	
+	color color_pow(uniform color x; uniform float n;){
+		return color(pow(x[0],n), pow(x[1],n), pow(x[2],n));
+	}
+	
+	float isHemisphere(uniform float hemisphere, theta_i, phi_i, theta_o, phi_o;)
+    {
+        // map phi_i from [-PI, PI] to [0, 2*PI]
+        if (phi_i >= 0)
+            phi_i -= M_PI_2;
+        else
+            phi_i += 3*M_PI_2;
+			
+        uniform float cos_theta_i = cos(theta_i);
+        uniform vector vi = (-sin(phi_i)*cos_theta_i, cos(phi_i)*cos_theta_i, sin(theta_i));
+ 
+        // map phi_o from [-PI, PI] to [0, 2*PI]
+        if (phi_o >= 0)
+            phi_o -= M_PI_2;
+        else
+            phi_o += 3*M_PI_2;
+        uniform float cos_theta_o = cos(theta_o);
+        uniform vector vo = (-sin(phi_o)*cos_theta_o, cos(phi_o)*cos_theta_o, sin(theta_o));
+ 
+        uniform float IdotO = vi . vo;
+        // need front hemisphere
+        if (hemisphere == hemi_f) { 
+            if (IdotO < 0)
+                return 0;
+            else
+                return 1;
+        }
+        else {//hemi_b
+            if (IdotO >= 0)
+                return 0;
+            else
+                return 1;
+        }
+    }
+    
 	//pre-computing and tabulating the uniform variables in the Constructor
 	void populate_a(uniform float hemisphere; output uniform color a[]) 
     {
-		uniform float directTheta = THETA_START;
+		uniform float theta_i = - M_PI_2;
+		uniform float phi_o, theta_o, phi_i;
+		
         uniform float i;
-        uniform float phi;
-        uniform float thetaH, phiH;
-		
-		
+        
 		
         for (i = 0; i < tableSize; i += 1) {
  
-            uniform color sum = 0.0;
-            for (phiH = - PI; phiH <= PI; phiH += segment) {
+            uniform color sum_phi_o = 0.0;
+			
+			//omega_o decompose to phi_o and theta_O
+            for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
-                uniform color thetaHSum = 0.0;
-                for (thetaH = - M_PI_2; thetaH <= M_PI_2; thetaH += segment) {
+                uniform color sum_theta_o = 0.0;
+				
+                for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
  
-                    uniform vector wo = (phiH, thetaH, 0);
-                    uniform color phiSum = 0.0;
-                    for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
-                        if (isHemisphere(hemisphere, directTheta, phi, thetaH, phiH) == 0) 
+      
+					float theta = theta_i + theta_o;
+					
+					uniform color sum_phi_i = 0.0;
+                    
+					for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+                        if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
                             continue;
                         
+						float phi = abs(phi_o - phi_i);
+						if( phi > PI)
+							phi -= 2*PI;
+						phi = abs(phi);
+						if ( phi > PI)
+							phi -= 2*PI;
+						phi = abs(phi);
 						
-                        uniform vector wi = (phi, directTheta, 0);
-                        uniform color fcos = absColor_(fs_(wo, wi));
-                        phiSum += fcos;
+						
+                        
+                        uniform color fcos = color_abs(fs(theta, phi)) * cos(theta_i);
+                        sum_phi_i += fcos;
                     }
-                    phiSum *= segment;
-                    thetaHSum += phiSum;
+					
+                    sum_phi_i *= segment;
+                    sum_theta_o += sum_phi_i;
                 }
-                thetaHSum *= segment;
-                sum += thetaHSum;
+                sum_theta_o *= segment;
+                sum_phi_o += sum_theta_o;
             }
-            sum *= segment;
- 
-            push( a, invPI * sum);
-            directTheta += segment;
+            sum_phi_o *= segment;
+			sum_phi_o *= M_1_PI;
+			
+            push( a, sum_phi_o );
+            theta_i += segment;
         }
     }
 	
@@ -306,7 +366,7 @@ class dual_scattering_AFC(
                 uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(thetaH - theta)/2), 2);
                 
                 uniform color phiSum = 0.0;
-                for (phi = -M_PI_2; phi <= M_PI_2; phi += segment) {
+                for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
                     if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
                         continue;
                     uniform float averageTheta = (thetaH + theta) / 2;
@@ -364,7 +424,7 @@ class dual_scattering_AFC(
             uniform color af = a_f[i];
             uniform color ab = a_b[i];
 			
-			uniform color afPow2 = pow(af, 2);
+			uniform color afPow2 = color_pow(af, 2);
 			
 			Ab = ab * afPow2 / (1 - afPow2) + pow(ab,3) * afPow2/pow(1-afPow2, 2);
 			
@@ -383,8 +443,8 @@ class dual_scattering_AFC(
 			uniform color alphaf = alpha_f[i];
             uniform color alphab = alpha_b[i];
 			
-			uniform color afPow2 = pow(af, 2);
-			uniform color abPow2 = pow(ab, 2);
+			uniform color afPow2 = color_pow(af, 2);
+			uniform color abPow2 = color_pow(ab, 2);
 			
 			uniform color deltab = alphab * (1 - 2*abPow2/pow(1-afPow2,2)) 
 				+ alphaf * ( 2*pow(1-afPow2,2)+ 4*afPow2*abPow2 ) / pow(1-afPow2, 3);
@@ -404,9 +464,9 @@ class dual_scattering_AFC(
             uniform color betaf = beta_f[i];
             uniform color betab = beta_b[i];
 			
-			uniform color betabPow2 = pow(betab, 2);
-			uniform color betafPow2 = pow(betaf, 2);
-			uniform color abPow3 = pow(ab,3);
+			uniform color betabPow2 = color_pow(betab, 2);
+			uniform color betafPow2 = color_pow(betaf, 2);
+			uniform color abPow3 = color_pow(ab,3);
 			
 			uniform color sigmab = (1 + d_b * pow(af,2)) * (ab + abPow3) * sqrt(2*betafPow2 + betabPow2)
 									/ ( ab + abPow3*(2*betaf + 3*betab) );
@@ -502,7 +562,6 @@ class dual_scattering_AFC(
             float illuminated = 1 - shadowed;
 
 			//estimate the number of hairs in front of the shading point
-            hairs_that_cast_full_shadow = 15;
 			hairs_in_front = shadowed * hairs_that_cast_full_shadow;
 			//use the number of hairs in front of the shading point to approximate sigma_f
 			sigma_f = hairs_in_front * beta_f;
