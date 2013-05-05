@@ -45,7 +45,7 @@ class dual_scattering_AFC(
 	constant float segment = 0.1;
 	constant float inv_segment = 10;
 	
-	constant float tableSize;
+	constant float tableSize = ceil(PI/segment);
 	
 	constant float d_b = 0.7;//backward scattering density factor
 	constant float d_f = 0.7;//forward scattering density factor
@@ -189,6 +189,7 @@ class dual_scattering_AFC(
 		return (f_R + f_TT + f_TRT)/(cos(theta) * cos(theta));
 	}
 
+	
 	color integrateOverFullSphere()//integrate over the full sphere around the shading point
 	{
 		float theta, phi;
@@ -210,6 +211,8 @@ class dual_scattering_AFC(
 		color f = fs(theta, phi);
 		return color(f[0]/fs_integral[0], f[1]/fs_integral[1], f[2]/fs_integral[2]);
 	}
+	
+	
 	color color_abs(color x){
 		return color(abs(x[0]), abs(x[1]), abs(x[2]));
 	}
@@ -337,12 +340,12 @@ class dual_scattering_AFC(
 
        for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
-            uniform color sum_theta_o = 0.0;
+            color sum_theta_o = 0.0;
 
             for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
                 
-				float theta = theta_i + theta_o;
-				uniform color sum_phi_i = 0.0;
+				float theta_h = (theta_i + theta_o) * 0.5;
+				color sum_phi_i = 0.0;
 
                 for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
                     if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
@@ -353,7 +356,11 @@ class dual_scattering_AFC(
 						phi -= 2*PI;
 					phi = abs(phi);	
 
-                    uniform color f = fs_normalized(theta, phi);
+                    color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
+					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
+					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
+
+                    color f = fs_R + fs_TT + fs_TRT;
 
                     sum_phi_i  += f;
                 }
@@ -385,7 +392,7 @@ class dual_scattering_AFC(
  
         float phi_o, theta_o, phi_i;
 
-		color fs_integral = integrateOverFullSphere();
+
 		
 		color sum_phi_o = 0.0;
 		
@@ -395,11 +402,11 @@ class dual_scattering_AFC(
 
             for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
                 
-				float theta = theta_i + theta_o;
-				float theta_h = theta * 0.5;
-				float inv_cos_theta_pow2 = 1.0 / pow(cos(theta),2);
+				
+				float theta_h = (theta_i + theta_o) * 0.5;
+				
 
-				uniform color sum_phi_i = 0.0;
+				color sum_phi_i = 0.0;
 
                 for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
                     if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
@@ -414,8 +421,7 @@ class dual_scattering_AFC(
 					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
 					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
 
-                    uniform color f = (fs_R * coef_R + fs_TT * coef_TT + fs_TRT * coef_TRT) * inv_cos_theta_pow2;
-					f = color(f[0]/fs_integral[0], f[1]/fs_integral[1], f[2]/fs_integral[2]);
+                    color f = fs_R * coef_R + fs_TT * coef_TT + fs_TRT * coef_TRT;
 					
                     sum_phi_i  += f;
                 }
@@ -527,7 +533,6 @@ class dual_scattering_AFC(
 	public void construct()
 	{	
 
-		tableSize = ceil(PI/segment);
 
 		/*average forward/backward attenuation*/
 		reserve(a_f, tableSize);
