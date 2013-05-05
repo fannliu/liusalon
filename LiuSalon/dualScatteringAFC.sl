@@ -111,7 +111,12 @@ class dual_scattering_AFC(
 			beta_  = radians(SecondaryHL_LongituWidth);
 		}
 		
-		return g(beta_ /*+ sigma_f*/, theta_h - alpha_);
+		color result;
+		result[0] = g(beta_ + sigma_f[0], theta_h - alpha_);
+		result[1] = g(beta_ + sigma_f[1], theta_h - alpha_);
+		result[2] = g(beta_ + sigma_f[2], theta_h - alpha_);
+		
+		return result;
     }
 
 	float N_(uniform float component; float phi;){
