@@ -38,6 +38,7 @@ class dual_scattering_AFC(
 	
 	
 	constant float M_PI_2 = PI * 0.5;
+	constant float M_PI_4 = PI * 0.25;
 	constant float M_1_PI = 1.0 / PI;
 	constant float M_2_PI = 2.0 / PI;
 	
@@ -143,13 +144,13 @@ class dual_scattering_AFC(
 		float phi;
 
 		if( component == R){
-			for(phi = M_PI_2; phi <= PI; phi += segment)
-				result += cos(phi * 0.5);
+			result = 2 * (sin(M_PI_2) - sin(M_PI_4));//integrate cos(phi/2)
 		}
 		else if( component == TT){
 			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
 			for(phi = M_PI_2; phi <= PI; phi += segment)
 				result += g(gamma_TT, PI - phi);
+			result *= segment;
 		}
 		else if( component == TRT){
 
@@ -161,8 +162,9 @@ class dual_scattering_AFC(
 				float N_G           = Glints_Intensity * g(gamma_G, G_angle - phi);
 				result += (N_TRT_minus_G + N_G);
 			}
+			result *= segment;
 		}
-		return result * segment * M_2_PI;
+		return result * M_2_PI;
 	}
 
 	vector GlobalToLocal(vector gv, x, y, z;)
