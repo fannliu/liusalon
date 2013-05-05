@@ -11,7 +11,7 @@
 #define MNoPluginEntry
 #include <maya/MFnPlugin.h>
 #include <maya/MFnNurbsCurve.h>
-
+#include <maya/MFnNurbsCurveData.h>
 
 #define MAKE_INPUT(attr) \
 CHECK_MSTATUS(attr.setKeyable(true)); \
@@ -23,6 +23,11 @@ CHECK_MSTATUS(attr.setKeyable(false)); \
 CHECK_MSTATUS(attr.setStorable(false)); \
 CHECK_MSTATUS(attr.setReadable(true)); \
 CHECK_MSTATUS(attr.setWritable(false));
+#define MAKE_CURVE_OUTPUT(attr) \
+CHECK_MSTATUS(attr.setArray(true)); \
+CHECK_MSTATUS(attr.setReadable(true)); \
+CHECK_MSTATUS(attr.setWritable(false)); \
+CHECK_MSTATUS (attr.setUsesArrayDataBuilder(true));
 #define MAKE_ADDR(attr) \
 CHECK_MSTATUS(attr.setKeyable(false)); \
 CHECK_MSTATUS(attr.setStorable(false)); \
@@ -31,6 +36,7 @@ CHECK_MSTATUS(attr.setWritable(false)); \
 CHECK_MSTATUS(attr.setHidden(true));
 
 MObject HairModelNode::inputCurve;
+MObject HairModelNode::outputCurves;
 MObject HairModelNode::outputMesh;
 MObject HairModelNode::numStrands;
 MObject HairModelNode::numPoints;
@@ -52,7 +58,7 @@ MStatus HairModelNode::initialize()
 	MFnTypedAttribute fileAttr;
 	MFnTypedAttribute outAttr;
 	MFnTypedAttribute curveAttr;
-	
+
 	MStatus returnStatus;
 
 	// for selecting an input curve and translating to framework
@@ -61,6 +67,7 @@ MStatus HairModelNode::initialize()
 										&returnStatus);
 	McheckErr(returnStatus, "ERROR creating curve attribute\n");
 	MAKE_INPUT(curveAttr);
+
 	// set it as an array to get an array of curves
 	returnStatus = curveAttr.setArray(true);
 	McheckErr(returnStatus, "ERROR setting curve attribute array\n");
@@ -88,45 +95,56 @@ MStatus HairModelNode::initialize()
 											&returnStatus ); 
 	McheckErr(returnStatus, "ERROR creating HairModelNode output attribute\n");
 	MAKE_INPUT(fileAttr);
-
-	HairModelNode::outputMesh = outAttr.create( "outputMesh", "out",
-												 MFnData::kMesh,
-												 &returnStatus ); 
+    
+	HairModelNode::outputCurves = outAttr.create( "outputCurves", "oc",
+													MFnNurbsCurveData::kNurbsCurve,
+													&returnStatus );
+	
+	//HairModelNode::outputMesh = outAttr.create( "outputMesh", "out",
+	//											 MFnData::kMesh,
+	//											 &returnStatus ); 
+												 
 	McheckErr(returnStatus, "ERROR creating HairModelNode output attribute\n");
-	outAttr.setStorable(false);
+	//MAKE_OUTPUT(outAttr);
+	MAKE_CURVE_OUTPUT(outAttr);
 
 	returnStatus = addAttribute(HairModelNode::inputCurve);
 	McheckErr(returnStatus, "ERROR adding inputCurve attribute\n");
 
-	returnStatus = addAttribute(HairModelNode::outputMesh);
-	McheckErr(returnStatus, "ERROR adding outputMesh attribute\n");
+	returnStatus = addAttribute(HairModelNode::outputCurves);
+	McheckErr(returnStatus, "ERROR adding outputCurves attribute\n");
 
-	returnStatus = addAttribute(HairModelNode::numPoints);
-	McheckErr(returnStatus, "ERROR adding points attribute\n");
+//	returnStatus = addAttribute(HairModelNode::outputMesh);
+//	McheckErr(returnStatus, "ERROR adding outputMesh attribute\n");
+	
+
+//	returnStatus = addAttribute(HairModelNode::numPoints);
+//	McheckErr(returnStatus, "ERROR adding points attribute\n");
 
 	returnStatus = addAttribute(HairModelNode::numStrands);
 	McheckErr(returnStatus, "ERROR adding strands attribute\n");
 
-	returnStatus = addAttribute(HairModelNode::hairLength);
-	McheckErr(returnStatus, "ERROR adding length attribute\n");
+//	returnStatus = addAttribute(HairModelNode::hairLength);
+//	McheckErr(returnStatus, "ERROR adding length attribute\n");
 
 	returnStatus = addAttribute(HairModelNode::file);
 	McheckErr(returnStatus, "ERROR adding file attribute\n");
 
 	returnStatus = attributeAffects(HairModelNode::inputCurve,
-								    HairModelNode::outputMesh);
+								    HairModelNode::outputCurves);
 
-	returnStatus = attributeAffects(HairModelNode::numPoints,
-								    HairModelNode::outputMesh);
+//	returnStatus = attributeAffects(HairModelNode::numPoints,
+//								    HairModelNode::outputCurves);
 
 	returnStatus = attributeAffects(HairModelNode::numStrands,
-									HairModelNode::outputMesh);
+									HairModelNode::outputCurves);
 
-	returnStatus = attributeAffects(HairModelNode::hairLength,
-								    HairModelNode::outputMesh);
+//	returnStatus = attributeAffects(HairModelNode::hairLength,
+//								    HairModelNode::outputCurves);
 
 	returnStatus = attributeAffects(HairModelNode::file,
-								    HairModelNode::outputMesh);
+								    HairModelNode::outputCurves);
+
 	McheckErr(returnStatus, "ERROR in attributeAffects\n");
 
 	return MS::kSuccess;
@@ -192,6 +210,7 @@ MObject HairModelNode::createMesh(MObject& outData, MStatus& stat, cyHairFile& h
 	return newMesh;
 }
 
+// this is translating a user defined curve to a HAIR curve
 MStatus HairModelNode::createHairCurve(MArrayDataHandle &inputArray, cyHairFile& hair)
 {
 	MStatus returnStatus;
@@ -292,10 +311,104 @@ MStatus HairModelNode::createHairCurve(MArrayDataHandle &inputArray, cyHairFile&
 MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 {
 	// call this function whenever attribute changes
-	// recompute the output mesh
+	// recompute the output curves
 
 	MStatus returnStatus;
+	cout << "testtesttest" << endl;
+	if (plug == outputCurves)
+	{
+		cyHairFile* h = new cyHairFile();
 
+		// get file
+		MDataHandle fileData = data.inputValue( file, &returnStatus ); 
+		McheckErr(returnStatus, "Error getting file data handle\n");
+		std::string fileName = fileData.asString().asChar();
+
+		if (!fileName.empty())
+		{
+			MObject pluginObj = MFnPlugin::findPlugin("LiuSalon");
+			MFnPlugin plugin(pluginObj);
+			
+			// find the file
+			cout << fileName.c_str() << endl;
+			int hairCount = h->LoadFromFile(fileName.c_str());
+			cerr << hairCount;
+
+			// get hair strands
+			MDataHandle strandsData = data.inputValue( numStrands, &returnStatus ); 
+			McheckErr(returnStatus, "Error getting strands data handle\n");
+			int st = strandsData.asInt();
+
+			if ( st > 0 && st < hairCount )
+			{
+				h->SetHairCount(st); //set number of hair strand
+			}
+			MArrayDataHandle outputArray = data.outputArrayValue( outputCurves, &returnStatus );
+			McheckErr(returnStatus, "Error getting output data handle\n");
+
+			MArrayDataBuilder builder(outputCurves, st, &returnStatus);
+			McheckErr(returnStatus, "Error creating builder\n");
+ 
+			int hasSegments = h->GetHeader().arrays & CY_HAIR_FILE_SEGMENTS_BIT;
+			int num_of_segments = h->GetHeader().d_segments;	
+			
+			int currPtIndex= 0;
+			for (int curveNum = 0; curveNum < st; curveNum++)
+			{
+				MDataHandle outHandle = builder.addElement(curveNum);
+				MFnNurbsCurveData dataCreator;
+				MObject outCurveData = dataCreator.create();
+
+				if(hasSegments)
+					num_of_segments = h->GetSegmentsArray()[curveNum];
+
+				MFnNurbsCurve newCurve;
+				const unsigned deg = 3;
+				const unsigned ncvs = num_of_segments + 1;
+				const unsigned spans = ncvs - deg;   // Number of spans
+				const unsigned nknots = spans+2*deg-1; // Number of knots
+
+				MDoubleArray knotSequences;
+				for (int i = 0; i < nknots; i++)
+					knotSequences.append((double) i);
+
+				MPointArray controlVertices;
+				for (int j = 0; j < ncvs; j++)
+				{
+					float x = h->GetPointsArray()[currPtIndex  ];
+					float y = h->GetPointsArray()[currPtIndex+2];
+					float z = h->GetPointsArray()[currPtIndex+1];
+					MPoint p(x, y, z);
+					controlVertices.append(p);
+					currPtIndex += 3;
+				}
+				newCurve.create(controlVertices, knotSequences, deg,
+								MFnNurbsCurve::kOpen, false, false,
+								outCurveData, &returnStatus);
+				McheckErr(returnStatus, "Error creating curve\n");
+
+				outHandle.set(outCurveData);
+			}
+
+			// Set the builder back into the output array.  This statement
+			// is always required, no matter what constructor was used to
+			// create the builder.
+			returnStatus = outputArray.set(builder);
+			McheckErr(returnStatus, "Error setting the builder\n");
+
+			// Since we compute all the elements of the array, instead of
+			// just marking the plug we were asked to compute as clean, mark
+			// every element of the array as clean to prevent further calls
+			// to this compute method during this DG evaluation cycle.
+			returnStatus = outputArray.setAllClean();
+			McheckErr(returnStatus, "Error cleaning outputCurves\n");
+		}
+	}
+	else
+		return MS::kUnknownParameter;
+
+	return MS::kSuccess;
+	/* THIS IS FOR CYLINDERS
 	if (plug == outputMesh) {
 		cyHairFile* h = new cyHairFile();
 
@@ -310,7 +423,7 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 			MFnPlugin plugin(pluginObj);
 			
 			// find the file
-			cout << fileName.c_str() << endl;
+			cout << "hair file is " << fileName.c_str() << endl;
 			int hairCount = h->LoadFromFile(fileName.c_str());
 
 			// get hair strands
@@ -376,22 +489,23 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 				}
 			}
 		}
-		/* Get output object */
+		
 		MDataHandle outputHandle = data.outputValue(outputMesh, &returnStatus);
 		McheckErr(returnStatus, "ERROR getting polygon data handle\n");
 
 		MFnMeshData dataCreator;
 		MObject newOutputData = dataCreator.create(&returnStatus);
 		McheckErr(returnStatus, "ERROR creating outputData");
-			
+		
+	//	createCurves(newOutputData, returnStatus, *h);
 		createMesh(newOutputData, returnStatus, *h);
 		McheckErr(returnStatus, "ERROR creating new strand");
 		
 		outputHandle.set(newOutputData);
 		data.setClean( plug );
-	}
+	} 
 	else
 		return MS::kUnknownParameter;
 
-	return MS::kSuccess;
+	return MS::kSuccess;*/
 }

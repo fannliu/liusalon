@@ -4,10 +4,10 @@ global proc createLiuSalonUI()
     setParent $gMainWindow;
     menu -label "LiuSalon" myMenu;
     setParent -menu myMenu;
-    menuItem -label "Create hair strand..." - command "createHairStrand";
-    menuItem -label "Create hair model..." -command "createHairModel";
-    menuItem -label "Create hair model from selected curves..." -command "createHairModelFromSelected";
-    menuItem -label "Assign hair shader..." -command "assignHairShader";
+    // menuItem -label "Create hair strand..." - command "createHairStrand";
+    menuItem -label "Create HAIR model..." -command "createHairModel";
+    // menuItem -label "Create hair model from selected curves..." -command "createHairModelFromSelected";
+    menuItem -label "Assign LiuSalon shader..." -command "assignHairShader";
 }
 
 global proc deleteLiuSalonUI()
@@ -58,13 +58,21 @@ global proc callCmd() {
     LiuSalonCmd -strands $s -points $p -length $l;
 }
 
- global proc createHairModel()
+global proc createHairModel()
 {
-    $transformNode = `createNode transform`;
-    $meshNode = `createNode mesh -p $transformNode`;
-    sets -add initialShadingGroup $meshNode;
+    //$transformNode = `createNode transform`;
+    //$meshNode = `createNode mesh -p $transformNode`;
+    //sets -add initialShadingGroup $meshNode;
+    $curveGroup = `createNode curveVarGroup`;
+    //sets -add initialShadingGroup $curvesNode;
     $hairNode = `createNode HairModelNode`;
-    connectAttr ($hairNode + ".outputMesh") ($meshNode + ".inMesh");
+    // create a random curve for input
+    $curve = `curve -d 3 -p -12 -3 13 -p -12 3 8 -p -12 -3 1 -p -12 3 -4`;
+
+    connectAttr ($hairNode + ".outputCurves") ($curveGroup + ".create");
+    connectAttr ($curveGroup + ".local[0]") ($curve + ".create");
+    select $curveGroup;
+    //connectAttr ($hairNode + ".outputMesh") ($meshNode + ".inMesh");
 }
 
 global proc createHairModelFromSelected()

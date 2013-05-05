@@ -28,6 +28,7 @@ public:
 
 	static MObject inputCurve;
 	static MObject outputMesh;
+	static MObject outputCurves;
 	static MObject numStrands;
 	static MObject numPoints;
 	static MObject hairLength;
