@@ -42,6 +42,8 @@ class dual_scattering_AFC(
 	constant float M_2_PI = 2.0 / PI;
 	
 	constant float segment = 0.1;
+	constant float inv_segment = 10;
+	
 	constant float tableSize;
 	
 	constant float d_b = 0.7;//backward scattering density factor
@@ -175,12 +177,19 @@ class dual_scattering_AFC(
 		
 		for(phi = - PI; phi <= PI; phi += segment)
 			for(theta = - PI; theta <= PI; theta += segment)
-				result += fs(theta, phi);
+				result  += fs(theta, phi);
+		
+		result *= segment;
 		
 		return result;
 		
 	}
 	
+	color fs_normalized(float theta, phi;)
+	{
+		return fs(theta, phi)/integrateOverFullSphere();
+		
+	}
 	color color_abs(uniform color x){
 		return color(abs(x[0]), abs(x[1]), abs(x[2]));
 	}
@@ -188,6 +197,26 @@ class dual_scattering_AFC(
 	color color_pow(uniform color x; uniform float n;){
 		return color(pow(x[0],n), pow(x[1],n), pow(x[2],n));
 	}
+	
+	color interpolate_theta_i(varying color ary[]; varying float theta_i) {
+        if (theta_i == - M_PI_2)
+            return ary[0];
+        else if (theta_i < M_PI_2)
+            return ary[0] - (ary[1] - ary[0]) * (M_PI_2- theta_i) * inv_segment;
+        else if (theta_i == M_PI_2)
+            return ary[tableSize-1];
+        else if (theta_i > M_PI_2)
+            return ary[tableSize-1] + (ary[tableSize-1] - ary[tableSize-2]) * (theta_i - M_PI_2) * inv_segment;
+        else {
+            float offset = (theta_i - M_PI_2) * inv_segment;
+            float low = floor(offset);
+            float high = ceil(offset);
+            if (low == high)
+                return ary[low];
+            else
+                return ary[low] + (ary[high] - ary[low]) * (offset - low)/(high - low);
+        }
+    }
 	
 	float isHemisphere(uniform float hemisphere, theta_i, phi_i, theta_o, phi_o;)
     {
@@ -232,7 +261,6 @@ class dual_scattering_AFC(
 		
         uniform float i;
         
-		
         for (i = 0; i < tableSize; i += 1) {
  
             uniform color sum_phi_o = 0.0;
@@ -244,7 +272,6 @@ class dual_scattering_AFC(
 				
                 for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
  
-      
 					float theta = theta_i + theta_o;
 					
 					uniform color sum_phi_i = 0.0;
@@ -261,9 +288,7 @@ class dual_scattering_AFC(
 							phi -= 2*PI;
 						phi = abs(phi);
 						
-						
-                        
-                        uniform color fcos = color_abs(fs(theta, phi)) * cos(theta_i);
+                        uniform color fcos = color_abs(fs_normalized(theta, phi)) * cos(theta_i);
                         sum_phi_i += fcos;
                     }
 					
@@ -274,9 +299,8 @@ class dual_scattering_AFC(
                 sum_phi_o += sum_theta_o;
             }
             sum_phi_o *= segment;
-			sum_phi_o *= M_1_PI;
 			
-            push( a, sum_phi_o );
+            push( a, sum_phi_o * M_1_PI );
             theta_i += segment;
         }
     }
@@ -468,9 +492,10 @@ class dual_scattering_AFC(
 			uniform color betafPow2 = color_pow(betaf, 2);
 			uniform color abPow3 = color_pow(ab,3);
 			
-			uniform color sigmab = (1 + d_b * pow(af,2)) * (ab + abPow3) * sqrt(2*betafPow2 + betabPow2)
+			uniform color sigmab_r = (1 + d_b * pow(af,2)) * (ab + abPow3) * sqrt(2*betafPow2 + betabPow2)
 									/ ( ab + abPow3*(2*betaf + 3*betab) );
-				
+			/*uniform float sigmab_g = (1 + d_b * pow(af[1],2)) * (ab[1] + abPow3[1]) * sqrt(2*betafPow2[1] + betabPow2[1])
+									/ ( ab[1] + abPow3[1]*(2*betaf[1] + 3*betab[1]) );	*/
             push( sigma, sigmab );
         }
     }
@@ -552,10 +577,10 @@ class dual_scattering_AFC(
 			float theta   = theta_i + theta_o;
 				  theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 
-			//interpolate from pre-computation
-			float Ab;
-			float deltab;
-			float sigmab;
+			//interpolate value from pre-computation
+			float     Ab = interpolate_theta_i(    A_b, theta_i);
+			float deltab = interpolate_theta_i(delta_b, theta_i);
+			float sigmab = interpolate_theta_i(sigma_b, theta_i);
 			
 			// compute the amount of shadow from the deep shadow maps
             float shadowed = shadow_p;
