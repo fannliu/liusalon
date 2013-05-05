@@ -82,7 +82,7 @@ class dual_scattering_AFC(
 		result[2] = exp( - pow(x[2],2) /( 2* pow(deviation[2],2) ) ) / ( deviation[2] * sqrt(2*PI) );
 		return result;
 	}
-	color M_(uniform float component; float theta_h;)
+	color M_(float component, theta_h;)
 	{
 		float alpha_, beta_;
 		if( component == R){
@@ -98,7 +98,7 @@ class dual_scattering_AFC(
 		return g(beta_, theta_h - alpha_);
 	}
 
-	color MG(uniform float component; float theta_h;)
+	color MG(float component, theta_h;)
 	{
 		float alpha_, beta_;
 		if( component == R){
@@ -107,7 +107,7 @@ class dual_scattering_AFC(
 		}else if( component == TT){
 			alpha_ = radians(BacklitRim_LongituShift);
 			beta_  = radians(BacklitRim_LongituWidth);
-		}else if( component == TRT){
+		}else {//if( component == TRT)
 			alpha_ = radians(SecondaryHL_LongituShift);
 			beta_  = radians(SecondaryHL_LongituWidth);
 		}
@@ -120,26 +120,28 @@ class dual_scattering_AFC(
 		return result;
 	}
 
-	float N_(uniform float component; float phi;){
+	float N_(float component, phi;){
+		float result;
+		
 		if( component == R)
-			return cos(phi * 0.5);
-
-		if( component == TT){
+			result = cos(phi * 0.5);
+		else if( component == TT){
 			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
-			return	g(gamma_TT, PI - phi);
-		}
-		if( component == TRT){
+			result = g(gamma_TT, PI - phi);
+		} else {//if( component == TRT)
 
 			float G_angle		= radians(Glints_AzimuthalShift);
 			float gamma_G		= radians(Glints_AzimuthalWidth);
 
 			float N_TRT_minus_G = cos(phi * 0.5);
 			float N_G			= Glints_Intensity * g(gamma_G, G_angle - phi);
-			return N_TRT_minus_G + N_G;
+			result = N_TRT_minus_G + N_G;
 		}
+		
+		return result;
 	}
 
-	float NG(uniform float component;){
+	float NG(float component;){
 		float result = 0;
 		float phi;
 
@@ -152,7 +154,7 @@ class dual_scattering_AFC(
 				result += g(gamma_TT, PI - phi);
 			result *= segment;
 		}
-		else if( component == TRT){
+		else {//if( component == TRT)
 
 			float G_angle		= radians(Glints_AzimuthalShift);
 			float gamma_G		= radians(Glints_AzimuthalWidth);
@@ -221,7 +223,7 @@ class dual_scattering_AFC(
 		return color(pow(x[0],n), pow(x[1],n), pow(x[2],n));
 	}
 	
-	color interpolate_theta_i(varying color ary[]; varying float theta_i) {
+	color interpolate_theta_i(color ary[]; float theta_i) {
 		
 		float theta_i_ = theta_i; 
 		if (theta_i_ == - M_PI_2)
@@ -243,7 +245,7 @@ class dual_scattering_AFC(
 		}
 	}
 	
-	float isHemisphere(uniform float hemisphere, theta_i, phi_i, theta_o, phi_o;)
+	float isHemisphere(float hemisphere, theta_i, phi_i, theta_o, phi_o;)
 	{
 		// map phi_i from [-PI, PI] to [0, 2*PI]
 		float phi_i_ = phi_i;
@@ -281,27 +283,27 @@ class dual_scattering_AFC(
 	}
 	
 	//pre-computing and tabulating the uniform variables in the Constructor
-	void populate_a(uniform float hemisphere; output uniform color a[]) 
+	void populate_a(float hemisphere; output uniform color a[];) 
 	{
-		uniform float theta_i = - M_PI_2;
-		uniform float phi_o, theta_o, phi_i;
+		float theta_i = - M_PI_2;
+		float phi_o, theta_o, phi_i;
 
-		uniform float i;
+		float i;
 		
 		for (i = 0; i < tableSize; i += 1) {
  
-			uniform color sum_phi_o = 0.0;
+			color sum_phi_o = 0.0;
 
 			//omega_o decompose to phi_o and theta_O
 			for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
-				uniform color sum_theta_o = 0.0;
+				color sum_theta_o = 0.0;
 
 				for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
  
 					float theta = theta_i + theta_o;
 
-					uniform color sum_phi_i = 0.0;
+					color sum_phi_i = 0.0;
 					
 					for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
 						if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
@@ -313,7 +315,7 @@ class dual_scattering_AFC(
 						phi = abs(phi);
 
 
-						uniform color fcos = color_abs(fs_normalized(theta, phi)) * cos(theta_i);
+						color fcos = color_abs(fs_normalized(theta, phi)) * cos(theta_i);
 						sum_phi_i += fcos;
 					}
 
@@ -330,7 +332,7 @@ class dual_scattering_AFC(
 		}
 	}
 	
-	color integrateOverHemisphere(uniform float theta_i; uniform float hemisphere)
+	color integrateOverHemisphere(float theta_i, hemisphere;)
 	{
 
 		float phi_o, theta_o, phi_i;
@@ -375,7 +377,7 @@ class dual_scattering_AFC(
 		return sum_phi_o;
 	}
 
-	color integrateOverHemisphereWeighted(uniform float theta_i; uniform float coef; uniform float hemisphere){
+	color integrateOverHemisphereWeighted(float theta_i, coef, hemisphere;){
 
 
 		float coef_R, coef_TT, coef_TRT;
@@ -398,7 +400,7 @@ class dual_scattering_AFC(
 		
 		for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
-			uniform color sum_theta_o = 0.0;
+			color sum_theta_o = 0.0;
 
 			for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
 				
@@ -437,7 +439,7 @@ class dual_scattering_AFC(
 
 	}
 
-	void populate_alphabeta(uniform float hemisphere; output uniform color target[]; float coef;)
+	void populate_alphabeta(float hemisphere; output uniform color target[]; float coef;)
 	{
 		float theta_i = - M_PI_2;
 		float i;
@@ -503,20 +505,20 @@ class dual_scattering_AFC(
 
 	void populate_sigma_b(output uniform color sigma[];)
 	{
-		uniform float i;
+		float i;
  
 		for (i = 0; i < tableSize; i += 1) {
-			uniform color af = a_f[i];
-			uniform color ab = a_b[i];
+			color af = a_f[i];
+			color ab = a_b[i];
 			
-			uniform color betaf = beta_f[i];
-			uniform color betab = beta_b[i];
+			color betaf = beta_f[i];
+			color betab = beta_b[i];
 
-			uniform color betabPow2 = color_pow(betab, 2);
-			uniform color betafPow2 = color_pow(betaf, 2);
-			uniform color abPow3 = color_pow(ab,3);
+			color betabPow2 = color_pow(betab, 2);
+			color betafPow2 = color_pow(betaf, 2);
+			color abPow3 = color_pow(ab,3);
 
-			uniform color sigmab;
+			color sigmab;
 			sigmab[0] = (1 + d_b * pow(af[0],2)) * (ab[0] + abPow3[0]) * sqrt(2*betafPow2[0] + betabPow2[0])
 									/ ( ab[0] + abPow3[0]*(2*betaf[0] + 3*betab[0]) );
 									
