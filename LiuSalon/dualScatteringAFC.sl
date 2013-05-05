@@ -175,9 +175,10 @@ class dual_scattering_AFC(
 		uniform float theta, phi;
 		uniform float result = 0.0;
 		
-		for(phi = - PI; phi <= PI; phi += segment)
+		for(phi = - PI; phi <= PI; phi += segment){
 			for(theta = - PI; theta <= PI; theta += segment)
 				result  += fs(theta, phi);
+				
 		
 		result *= segment;
 		
@@ -284,9 +285,7 @@ class dual_scattering_AFC(
 						if( phi > PI)
 							phi -= 2*PI;
 						phi = abs(phi);
-						if ( phi > PI)
-							phi -= 2*PI;
-						phi = abs(phi);
+						
 						
                         uniform color fcos = color_abs(fs_normalized(theta, phi)) * cos(theta_i);
                         sum_phi_i += fcos;
@@ -305,61 +304,49 @@ class dual_scattering_AFC(
         }
     }
 	
-	color integrateOverHemisphere(uniform float theta; uniform float hemisphere){
+	color integrateOverHemisphere(uniform float theta_i; uniform float hemisphere)
+	{
 	    
-		uniform float invCosTheta = max(0, 1 / cos(theta));
- 
-        uniform float thetaH;
-        uniform float phiH;
-        uniform float phi;
- 
-        uniform color sum = 0.0;
+		uniform float phi_o, theta_o, phi_i;
+
+        uniform color sum_phi_o = 0.0;
 		
 		uniform float inv_fs_integral = 1.0 /integrateOverFullSphere();
 		
-        for (phiH = -PI; phiH <= PI; phiH += segment) {
+       for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
-            uniform color thetaHSum = 0.0;
-            for (theta_h = - M_PI_2; theta_h <= M_PI_2; theta_h += segment) {
- 
-                uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(theta_h - theta)/2), 2);
+            uniform color sum_theta_o = 0.0;
+			
+            for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
                 
-                uniform color phiSum = 0.0;
-                for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
-                    if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
-                        continue;
-                    uniform float averageTheta = (thetaH + theta) / 2;
-                    uniform float relativeTheta = abs(thetaH - theta) / 2;
-                    uniform float averageAzimuth = (phiH + phi) / 2;
-                    uniform float relativeAzimuth = mod( abs(phiH - phi), doublePI );
- 
-                    /*uniform float coef_MR = MR_(averageTheta);
-                    uniform float coef_MTT = MTT_(averageTheta);
-                    uniform float coef_MTRT = MTRT_(averageTheta);
-                    uniform color coef_NR = NR_(relativeTheta, relativeAzimuth);
-                    uniform color coef_NTT = NTT_(relativeTheta, relativeAzimuth);
-                    uniform color coef_NTRT = NTRT_(relativeTheta, relativeAzimuth, averageAzimuth);
-					*/
-					color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
-					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
-					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
-
-                    uniform color f = (fs_R + fs_TT + fs_TRT) * invCosRelativeThetaPow2 * inv_fs_integral;
+				float theta = theta_i + theta_o;
+				uniform color sum_phi_i = 0.0;
 					
-                    phiSum += f;
+                for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+                    if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
+                        continue;
+						
+                    float phi = abs(phi_o - phi_i);
+					if( phi > PI)
+						phi -= 2*PI;
+					phi = abs(phi);	
+
+                    uniform color f = fs_normalized(theta, phi);
+					
+                    sum_phi_i  += f;
                 }
-                phiSum *= segment;
-                thetaHSum += phiSum;
+                sum_phi_i  *= segment;
+                sum_theta_o += sum_phi_i;
             }
-            thetaHSum *= segment;
-            sum += thetaHSum;
+            sum_theta_o *= segment;
+            sum_phi_o += sum_theta_o;
         }
-        sum *= segment;
+        sum_phi_o *= segment;
  
-        return sum;
+        return sum_phi_o;
 	}
 	
-	color integrateOverHemisphereWeighted(uniform float theta; uniform float coef; uniform float hemisphere){
+	color integrateOverHemisphereWeighted(uniform float theta_i; uniform float coef; uniform float hemisphere){
 
 		
 		uniform float coef_R, coef_TT, coef_TRT;
@@ -374,69 +361,64 @@ class dual_scattering_AFC(
             coef_TRT = radians(SecondaryHL_LongituWidth);
         }
  
-        uniform float thetaH;
-        uniform float phiH;
-        uniform float phi;
+        uniform float phi_o, theta_o, phi_i;
 		
 		uniform float inv_fs_integral = 1.0 /integrateOverFullSphere();
 		
-		
-        uniform color sum = 0.0;
-        for (phiH= -PI; phiH <= PI; phiH += segment) {
+		for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
-            uniform color thetaHSum = 0.0;
-            for (theta_h = -M_PI_2; thetaH <= M_PI_2; thetaH += segment) {
- 
-                uniform float invCosRelativeThetaPow2 = 1 / pow(cos(abs(thetaH - theta)/2), 2);
+            uniform color sum_theta_o = 0.0;
+			
+            for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
                 
-                uniform color phiSum = 0.0;
-                for (phi = - M_PI_2; phi <= M_PI_2; phi += segment) {
-                    if (isHemisphere(hemisphere, theta, phi, thetaH, phiH) == 0)
+				float theta = theta_i + theta_o;
+				float theta_h = theta * 0.5;
+				float inv_cos_theta_pow2 = 1.0 / pow(cos(theta),2);
+				
+				uniform color sum_phi_i = 0.0;
+					
+                for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+                    if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
                         continue;
-                    uniform float averageTheta = (thetaH + theta) / 2;
-                    uniform float relativeTheta = abs(thetaH - theta) / 2;
-                    uniform float averageAzimuth = (phiH + phi) / 2;
-                    uniform float relativeAzimuth = mod( abs(phiH - phi), doublePI );
-                
-                    /*uniform float coef_MR = MR_(averageTheta);
-                    uniform float coef_MTT = MTT_(averageTheta);
-                    uniform float coef_MTRT = MTRT_(averageTheta);
-                    uniform color coef_NR = NR_(relativeTheta, relativeAzimuth);
-                    uniform color coef_NTT = NTT_(relativeTheta, relativeAzimuth);
-                    uniform color coef_NTRT = NTRT_(relativeTheta, relativeAzimuth, averageAzimuth);*/
- 
+						
+                    float phi = abs(phi_o - phi_i);
+					if( phi > PI)
+						phi -= 2*PI;
+					phi = abs(phi);	
+
                     color fs_R   =   PrimaryHL_Color *   PrimaryHL_Intensity * M_(R, theta_h)   * N_(R, phi);
 					color fs_TT  =  BacklitRim_Color *  BacklitRim_Intensity * M_(TT, theta_h)  * N_(TT, phi);
 					color fs_TRT = SecondaryHL_Color * SecondaryHL_Intensity * M_(TRT, theta_h) * N_(TRT, phi);
 
-                    uniform color f = (fs_R * coef_R + fs_TT * coef_TT + fs_TRT * coef_TRT) * invCosRelativeThetaPow2 * inv_fs_integral;
+                    uniform color f = (fs_R * coef_R + fs_TT * coef_TT + fs_TRT * coef_TRT) * inv_cos_theta_pow2 * inv_fs_integral;
 					
-                    phiSum += f;
+                    sum_phi_i  += f;
                 }
-                phiSum *= segment;
-                thetaHSum += phiSum;
+                sum_phi_i  *= segment;
+                sum_theta_o += sum_phi_i;
             }
-            thetaHSum *= segment;
-            sum += thetaHSum;
+            sum_theta_o *= segment;
+            sum_phi_o += sum_theta_o;
         }
-        sum *= segment;
+        sum_phi_o *= segment;
  
-        return sum;
+        return sum_phi_o;
+		
 	}
 	
 	void populate_alphabeta(uniform float hemisphere; output uniform color target[]; float coef;)
     {
-        uniform float theta = - M_PI_2;
+        uniform float theta_i = - M_PI_2;
         uniform float i;
         uniform color denominator = 0.0;
         uniform color numerator = 0.0;
  
         for (i = 0; i < tableSize; i++) {
-			  numerator = integrateOverHemisphereWeighted(theta, coef, hemisphere);
+			  numerator = integrateOverHemisphereWeighted(theta_i, coef, hemisphere);
             denominator = integrateOverHemisphere(theta, hemisphere);
              
             push( target, numerator / denominator );
-            theta += segment;
+            theta_i += segment;
         }
     }
 
