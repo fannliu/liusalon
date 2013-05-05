@@ -125,13 +125,15 @@ class dual_scattering_AFC(
 
 	float NG(uniform float component;){
 		float result = 0;
+		float phi;
+		
 		if( component == R){
-			for(float phi = M_PI_2; phi <= PI; phi += segment)
+			for(phi = M_PI_2; phi <= PI; phi += segment)
 				result += cos(phi * 0.5);
 		}
 		else if( component == TT){
 			float gamma_TT = radians(BacklitRim_AzimuthalWidth);
-			for(float phi = M_PI_2; phi <= PI; phi += segment)
+			for(phi = M_PI_2; phi <= PI; phi += segment)
 				result += g(gamma_TT, PI - phi);
 		}
 		else if( component == TRT){
@@ -139,7 +141,7 @@ class dual_scattering_AFC(
 			float G_angle       = radians(Glints_AzimuthalShift);
 			float gamma_G       = radians(Glints_AzimuthalWidth);
 			
-			for(float phi = M_PI_2; phi <= PI; phi += segment){        
+			for(phi = M_PI_2; phi <= PI; phi += segment){        
 				float N_TRT_minus_G = cos(phi * 0.5);
 				float N_G           = Glints_Intensity * g(gamma_G, G_angle - phi);
 				result += (N_TRT_minus_G + N_G);
@@ -413,7 +415,7 @@ class dual_scattering_AFC(
         uniform color denominator = 0.0;
         uniform color numerator = 0.0;
  
-        for (i = 0; i < tableSize; i++) {
+        for (i = 0; i < tableSize; i += 1) {
 			  numerator = integrateOverHemisphereWeighted(theta_i, coef, hemisphere);
             denominator = integrateOverHemisphere(theta, hemisphere);
              
@@ -422,7 +424,7 @@ class dual_scattering_AFC(
         }
     }
 
-	void populate_A_b(output uniform color A[])
+	void populate_A_b(output uniform color A[];)
     {
         uniform float i;
  
@@ -438,11 +440,11 @@ class dual_scattering_AFC(
         }
     }
 	
-	void populate_delta_b(output uniform color delta[]) 
+	void populate_delta_b(output uniform color delta[];) 
     {
         uniform float i;
  
-        for (i = 0; i < tableSize; i++) {
+        for (i = 0; i < tableSize; i += 1) {
             uniform color af = a_f[i];
             uniform color ab = a_b[i];
 			
@@ -459,11 +461,11 @@ class dual_scattering_AFC(
         }
     }
 	
-	void populate_sigma_b(output uniform color sigma[])
+	void populate_sigma_b(output uniform color sigma[];)
     {
         uniform float i;
  
-        for (i = 0; i < tableSize; i++) {
+        for (i = 0; i < tableSize; i += 1) {
             uniform color af = a_f[i];
             uniform color ab = a_b[i];
             
