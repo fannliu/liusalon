@@ -195,11 +195,10 @@ class dual_scattering_AFC(
 		color result = 0.0;
 
 		for(phi = - PI; phi <= PI; phi += segment)
-			for(theta = - PI; theta <= PI; theta += segment)
+			for(theta = - M_PI_2; theta <= M_PI_2; theta += segment)
 				result  += fs(theta, phi);
 
-
-		result *= segment;
+		result = result * segment * segment;
 
 		return result;
 
