@@ -162,7 +162,7 @@ class dual_scattering_AFC(
 				result += (N_TRT_minus_G + N_G);
 			}
 		}
-		return result * M_2_PI;
+		return result * segment * M_2_PI;
 	}
 
 	vector GlobalToLocal(vector gv, x, y, z;)
