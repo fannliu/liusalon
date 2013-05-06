@@ -22,10 +22,12 @@ class dual_scattering_AFC(
     uniform color ForwardScattering_Color      = color(1,0,0);
     uniform float ForwardScattering_Intensity  = 0.1;
     
-    uniform color BackScattering_Color         = color(0,1,0);
+    uniform color BackScattering_Color         = color(0.9,1,0);
     uniform float BackScattering_Intensity     = 0.1;
     uniform float BackScattering_LongituShift  = -2;
     uniform float BackScattering_LongituWidth  = 0.5;
+	
+	uniform float hairs_that_cast_full_shadow = 15;//not sure??????
     
     )
 {
@@ -46,7 +48,7 @@ class dual_scattering_AFC(
     constant float d_b = 0.7;//backward scattering density factor
     constant float d_f = 0.7;//forward scattering density factor
     
-    constant float hairs_that_cast_full_shadow = 15;//not sure??????
+    
     
     //Defining the uniform parameters used in the pre-computation step
     uniform color a_f[];
@@ -73,9 +75,9 @@ class dual_scattering_AFC(
     
     color color_g(color deviation, x;){
         color result;
-        result[0] = exp( - pow(x[0],2) /( 2* pow(deviation[0],2) ) ) / ( deviation[0] * sqrt(2*PI) );
-        result[1] = exp( - pow(x[1],2) /( 2* pow(deviation[1],2) ) ) / ( deviation[1] * sqrt(2*PI) );
-        result[2] = exp( - pow(x[2],2) /( 2* pow(deviation[2],2) ) ) / ( deviation[2] * sqrt(2*PI) );
+        result[0] = exp( - pow(x[0],2) /( 2 * pow(deviation[0],2) ) ) / ( deviation[0] * sqrt(2*PI) );
+        result[1] = exp( - pow(x[1],2) /( 2 * pow(deviation[1],2) ) ) / ( deviation[1] * sqrt(2*PI) );
+        result[2] = exp( - pow(x[2],2) /( 2 * pow(deviation[2],2) ) ) / ( deviation[2] * sqrt(2*PI) );
         return result;
     }
 	
@@ -560,45 +562,45 @@ class dual_scattering_AFC(
 
 
         /*average forward/backward attenuation*/
-		printf("begin\n");
+		printf("begin construct\n");
         reserve(a_f, tableSize);
-		printf("reserve a_f\n");
+		//printf("reserve a_f\n");
         
         populate_a(hemi_f, a_f);
-		printf("a_f\n");
+		//printf("a_f\n");
 		reserve(a_b, tableSize);
         populate_a(hemi_b, a_b);
-		printf("a_b\n");
+		//printf("a_b\n");
         /*average forward/backward scattering shift*/
         reserve(alpha_f, tableSize);
         reserve(alpha_b, tableSize);
         populate_alphabeta(hemi_f, 0, alpha_f);
-		printf("alpha_f\n");
+		//printf("alpha_f\n");
         populate_alphabeta(hemi_b, 0, alpha_b);
-		printf("alpha_b\n");
+		//printf("alpha_b\n");
 
         /*average forward/backward scattering deviation/width*/
         reserve(beta_f, tableSize);
         reserve(beta_b, tableSize);
         populate_alphabeta(hemi_f, 1, beta_f);
-		printf("beta_f\n");
+		//printf("beta_f\n");
         populate_alphabeta(hemi_b, 1, beta_b);
-		printf("beta_b\n");
+		//printf("beta_b\n");
 		
         /*average backscattering attenuation*/
         reserve(A_b, tableSize);
         populate_A_b(A_b);
-		printf("A_b\n");
+		//printf("A_b\n");
 
         /*average longitudinal shift*/
         reserve(delta_b, tableSize);
         populate_delta_b(delta_b);
-		printf("delta_b\n");
+		//printf("delta_b\n");
 
         /*average backscattering deviation*/
         reserve(sigma_b, tableSize);
         populate_sigma_b(sigma_b);      
-		printf("sigma_b\n");
+		//printf("sigma_b\n");
     }
     
     public void surface(output color Ci, Oi;)
