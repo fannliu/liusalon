@@ -323,7 +323,7 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 		MDataHandle fileData = data.inputValue( file, &returnStatus ); 
 		McheckErr(returnStatus, "Error getting file data handle\n");
 		std::string fileName = fileData.asString().asChar();
-
+		cout << "file name check!" << endl;
 		if (!fileName.empty())
 		{
 			MObject pluginObj = MFnPlugin::findPlugin("LiuSalon");
@@ -332,17 +332,18 @@ MStatus HairModelNode::compute(const MPlug& plug, MDataBlock& data)
 			// find the file
 			cout << fileName.c_str() << endl;
 			int hairCount = h->LoadFromFile(fileName.c_str());
-			cerr << hairCount;
 
 			// get hair strands
 			MDataHandle strandsData = data.inputValue( numStrands, &returnStatus ); 
 			McheckErr(returnStatus, "Error getting strands data handle\n");
 			int st = strandsData.asInt();
 
-			if ( st > 0 && st < hairCount )
+			if ( st < 0 || st > hairCount)
 			{
-				h->SetHairCount(st); //set number of hair strand
+				cout << "There are only " << hairCount << " strands in this model, generating " << hairCount << " strands." << endl; 
+				st = hairCount;
 			}
+
 			MArrayDataHandle outputArray = data.outputArrayValue( outputCurves, &returnStatus );
 			McheckErr(returnStatus, "Error getting output data handle\n");
 
