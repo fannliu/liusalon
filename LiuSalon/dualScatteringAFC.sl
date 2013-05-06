@@ -38,7 +38,7 @@ class dual_scattering_AFC(
     constant float M_1_PI = 1.0 / PI;
     constant float M_2_PI = 2.0 / PI;
     
-    constant float segment = 0.1;
+    constant float segment = 1.0;
     constant float inv_segment = 1 / segment;
     
     constant float tableSize = ceil( PI / segment );
@@ -316,23 +316,25 @@ class dual_scattering_AFC(
         float phi_o, theta_o, phi_i;
 
         float i;
-        
+       
+		//printf("start of populate_a\n");
         for (i = 0; i < tableSize; i += 1) {
- 
+			//printf("i=%f\n", i);
             color sum_phi_o = 0.0;
 
             //omega_o decompose to phi_o and theta_O
             for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
- 
+				//printf("phi_o=%f\n", phi_o);
                 color sum_theta_o = 0.0;
 
                 for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
- 
+					//printf("theta_o=%f\n", theta_o);
                     float theta = theta_i + theta_o;
 
                     color sum_phi_i = 0.0;
                     
                     for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+						//printf("phi_i=%f\n", phi_i);
                         if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
                             continue;
                         
@@ -366,7 +368,7 @@ class dual_scattering_AFC(
 
         color sum_phi_o = 0.0;
 
-
+		
        for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
  
             color sum_theta_o = 0.0;
@@ -560,10 +562,11 @@ class dual_scattering_AFC(
         /*average forward/backward attenuation*/
 		printf("begin\n");
         reserve(a_f, tableSize);
-		
-        reserve(a_b, tableSize);
+		printf("reserve a_f\n");
+        
         populate_a(hemi_f, a_f);
 		printf("a_f\n");
+		reserve(a_b, tableSize);
         populate_a(hemi_b, a_b);
 		printf("a_b\n");
         /*average forward/backward scattering shift*/
