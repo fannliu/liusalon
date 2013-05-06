@@ -558,37 +558,44 @@ class dual_scattering_AFC(
 
 
         /*average forward/backward attenuation*/
+		printf("begin\n");
         reserve(a_f, tableSize);
+		
         reserve(a_b, tableSize);
         populate_a(hemi_f, a_f);
+		printf("a_f\n");
         populate_a(hemi_b, a_b);
-
+		printf("a_b\n");
         /*average forward/backward scattering shift*/
         reserve(alpha_f, tableSize);
         reserve(alpha_b, tableSize);
         populate_alphabeta(hemi_f, 0, alpha_f);
+		printf("alpha_f\n");
         populate_alphabeta(hemi_b, 0, alpha_b);
+		printf("alpha_b\n");
 
         /*average forward/backward scattering deviation/width*/
         reserve(beta_f, tableSize);
         reserve(beta_b, tableSize);
         populate_alphabeta(hemi_f, 1, beta_f);
+		printf("beta_f\n");
         populate_alphabeta(hemi_b, 1, beta_b);
-
+		printf("beta_b\n");
+		
         /*average backscattering attenuation*/
         reserve(A_b, tableSize);
         populate_A_b(A_b);
-
+		printf("A_b\n");
 
         /*average longitudinal shift*/
         reserve(delta_b, tableSize);
         populate_delta_b(delta_b);
-
+		printf("delta_b\n");
 
         /*average backscattering deviation*/
         reserve(sigma_b, tableSize);
         populate_sigma_b(sigma_b);      
-
+		printf("sigma_b\n");
     }
     
     public void surface(output color Ci, Oi;)
@@ -620,7 +627,8 @@ class dual_scattering_AFC(
             vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); 
             float    phi_i = atan(omega_i[1], omega_i[0]);
             float    phi   = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
-
+			
+			//clamp $phi$ to [-PI, PI]
             if ( phi > PI )
                 phi -= 2 * PI;
             phi = abs(phi);
