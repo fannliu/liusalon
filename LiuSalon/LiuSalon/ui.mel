@@ -8,6 +8,8 @@ global proc createLiuSalonUI()
     menuItem -label "Create HAIR model..." -command "createHairModel";
     // menuItem -label "Create hair model from selected curves..." -command "createHairModelFromSelected";
     menuItem -label "Assign LiuSalon shader..." -command "assignHairShader";
+    // add something for choosing lights and adding?  or adding deep shadow maps?
+    menuItem -label "Assign LiuSalon shader with lights..." -command "createLightSet";
 }
 
 global proc deleteLiuSalonUI()
@@ -71,7 +73,12 @@ global proc createHairModel()
 
     connectAttr ($hairNode + ".outputCurves") ($curveGroup + ".create");
     connectAttr ($curveGroup + ".local[0]") ($curve + ".create");
-    select $curveGroup;
+    select $hairNode;
+    //$curveGroupChildren = `listRelatives $curveGroup`;
+    //$num_children = `size($curveGroupChildren)`;
+    
+    // now you want to combine it into one curve!
+    
     //connectAttr ($hairNode + ".outputMesh") ($meshNode + ".inMesh");
 }
 
@@ -128,7 +135,7 @@ global proc createHairModelFromSelected()
     connectAttr ($hairNode + ".outputMesh") ($meshNode + ".inMesh");
 }
 
- global proc assignHairShader()
+global proc assignHairShader()
 {
     // this should create a 3delight surface shader
     string $shader_path = `fileDialog -directoryMask "*.sdl" -title "Open Hair Shader File"`;
@@ -150,5 +157,60 @@ global proc createHairModelFromSelected()
 
 global proc createLightSet()
 {
+    // select lights AND HAIR
+    // problem: we need the geometry attribute node that results from DGA_create()
+    $selectionList = `ls -selection`;
+    string $lights[]; // array of lights, make this a set
+    for ($i = 0; $i < size($selectionList) - 1; $i++)
+    {
+        $lights[$i] = $selectionList[$i];
+    }
+    select $lights;
+    $lightSet = `sets`;
+    // now get the last selection, the HAIR MODEL
+    $hair = $selectionList[size($selectionList)-1];
+    select $hair;
+    $hairSet = `sets`;
 
+    // this should create a 3delight surface shader
+    string $shader_path = `fileDialog -directoryMask "*.sdl" -title "Open Hair Shader File"`;
+    string $surface_shader = DL_createSurfaceShader( $shader_path, 1);
+    DL_setAssignmentPanelAttrib("object", "surface", $surface_shader );
+    // make it assign geometry attribute
+    $new_node = DGA_create();
+    DGA_outputMayaCurvesCreateAttr($new_node);
+    DGA_startWidthCreateAttr($new_node);
+    DGA_endWidthCreateAttr($new_node);
+    setAttr ($new_node + ".outputMayaCurves") 1;
+    setAttr ($new_node + ".startWidth") 0.07;
+    setAttr ($new_node + ".endWidth") 0.07;
+    // create a light illumination attribute
+    DGA_illuminationFromCreateAttr($new_node);
+    AE_setConnectedNodeFromMenu (($new_node) + ".illuminationFrom") "AE_updateAE" $lightSet;
+    DL_setAssignmentPanelAttrib("object", "delightGeoAttribs", $new_node);
+    
+    // create a new light attribute
+    $light_node = DLA_create();
+    // create shadow map attribute
+    DLA_generateShadowMapsCreateAttr($light_node);
+    setAttr ($light_node + ".generateShadowMaps") 1;
+    // create shadow map type attribute
+    DLA_shadowMapTypeCreateAttr($light_node);
+    setAttr ($light_node + ".shadowMapType") 6; // change to deep shadow maps
+    // create other attributes
+    DLA_shadowMapNameCreateAttr($light_node);
+    DLA_shadowMapResolutionCreateAttr($light_node);
+    DLA_shadowMapShadingRateCreateAttr($light_node);
+    DLA_shadowDepthFilterCreateAttr($light_node);
+    DLA_shadowMapPixelSamplesCreateAttr($light_node);
+    DLA_nearClipPlaneCreateAttr($light_node);
+    DLA_farClipPlaneCreateAttr($light_node);
+    DLA_shadowCameraCreateAttr($light_node);
+    // create shadow objects attribute
+    DLA_shadowObjectsCreateAttr($light_node);
+    AE_setConnectedNodeFromMenu ($light_node + ".shadowObjects") "AE_updateAE" $hairSet;
+    select $lights;
+    DL_setAssignmentPanelAttrib("object", "delightLightAttribs", $light_node);
+    select $surface_shader;
+ //   AE_setConnectedNodeFromMenu delightGeoAttribs1.illuminationFrom "AE_updateAE" set1;
 }
