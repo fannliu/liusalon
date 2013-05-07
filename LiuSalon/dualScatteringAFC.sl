@@ -64,7 +64,7 @@ class dual_scattering_AFC(
 
     //Defining the varying parameters which have different values for each shading point
     varying float hairs_in_front;
-    varying color sigma_f;
+    varying color sigma_f_squared;
     varying color T_f;
 
    
@@ -73,27 +73,24 @@ class dual_scattering_AFC(
        return exp( - x*x /( 2*deviation*deviation ) ) / ( deviation * sqrt(2*PI) );
     }
     
-    color color_g(color deviation, x;){
-        color result;
-        result[0] = exp( - pow(x[0],2) /( 2 * pow(deviation[0],2) ) ) / ( deviation[0] * sqrt(2*PI) );
-        result[1] = exp( - pow(x[1],2) /( 2 * pow(deviation[1],2) ) ) / ( deviation[1] * sqrt(2*PI) );
-        result[2] = exp( - pow(x[2],2) /( 2 * pow(deviation[2],2) ) ) / ( deviation[2] * sqrt(2*PI) );
-        return result;
-    }
+	float gvar(float variance, x;)
+	{
+		return exp( - x*x /( 2*variance ) ) / sqrt(2*PI*variance) ;
+	}
 	
-	color M_R(float theta_h;){
+	float M_R(float theta_h;){
 		float alpha_ = radians(PrimaryHL_LongituShift);
         float beta_  = radians(PrimaryHL_LongituWidth);
 		return g(beta_, theta_h - alpha_);
 	}
 	
-	color M_TT(float theta_h;){
+	float M_TT(float theta_h;){
 		float alpha_ = radians(BacklitRim_LongituShift);
         float beta_  = radians(BacklitRim_LongituWidth);
 		return g(beta_, theta_h - alpha_);
 	}
 	
-	color M_TRT(float theta_h;){
+	float M_TRT(float theta_h;){
 		float alpha_ = radians(SecondaryHL_LongituShift);
         float beta_  = radians(SecondaryHL_LongituWidth);
 		return g(beta_, theta_h - alpha_);
@@ -104,9 +101,9 @@ class dual_scattering_AFC(
         float beta_  = radians(PrimaryHL_LongituWidth);
 		
 		color result;
-        result[0] = g(beta_ + sigma_f[0], theta_h - alpha_);
-        result[1] = g(beta_ + sigma_f[1], theta_h - alpha_);
-        result[2] = g(beta_ + sigma_f[2], theta_h - alpha_);
+        result[0] = gvar(pow(beta_,2) + sigma_f_squared[0], theta_h - alpha_);
+        result[1] = gvar(pow(beta_,2) + sigma_f_squared[1], theta_h - alpha_);
+        result[2] = gvar(pow(beta_,2) + sigma_f_squared[2], theta_h - alpha_);
         
         return result;
 	}
@@ -116,9 +113,9 @@ class dual_scattering_AFC(
         float beta_  = radians(BacklitRim_LongituWidth);
 		
 		color result;
-        result[0] = g(beta_ + sigma_f[0], theta_h - alpha_);
-        result[1] = g(beta_ + sigma_f[1], theta_h - alpha_);
-        result[2] = g(beta_ + sigma_f[2], theta_h - alpha_);
+        result[0] = gvar(pow(beta_,2) + sigma_f_squared[0], theta_h - alpha_);
+        result[1] = gvar(pow(beta_,2) + sigma_f_squared[1], theta_h - alpha_);
+        result[2] = gvar(pow(beta_,2) + sigma_f_squared[2], theta_h - alpha_);
         
         return result;
 	}
@@ -128,9 +125,9 @@ class dual_scattering_AFC(
         float beta_  = radians(SecondaryHL_LongituWidth);
 		
 		color result;
-        result[0] = g(beta_ + sigma_f[0], theta_h - alpha_);
-        result[1] = g(beta_ + sigma_f[1], theta_h - alpha_);
-        result[2] = g(beta_ + sigma_f[2], theta_h - alpha_);
+        result[0] = gvar(pow(beta_,2) + sigma_f_squared[0], theta_h - alpha_);
+        result[1] = gvar(pow(beta_,2) + sigma_f_squared[1], theta_h - alpha_);
+        result[2] = gvar(pow(beta_,2) + sigma_f_squared[2], theta_h - alpha_);
         
         return result;
 	}
@@ -254,17 +251,17 @@ class dual_scattering_AFC(
     
     color interpolate_theta_i(color ary[]; float theta_i) {
         
-        float theta_i_ = theta_i; 
-        if (theta_i_ == - M_PI_2)
+      
+        if (theta_i == - M_PI_2)
             return ary[0];
-        else if (theta_i_ < M_PI_2)
-            return ary[0] - (ary[1] - ary[0]) * (M_PI_2- theta_i_) * inv_segment;
-        else if (theta_i_ == M_PI_2)
+        else if (theta_i < M_PI_2)
+            return ary[0] - (ary[1] - ary[0]) * (M_PI_2- theta_i) * inv_segment;
+        else if (theta_i == M_PI_2)
             return ary[tableSize-1];
-        else if (theta_i_ > M_PI_2)
-            return ary[tableSize-1] + (ary[tableSize-1] - ary[tableSize-2]) * (theta_i_ - M_PI_2) * inv_segment;
+        else if (theta_i > M_PI_2)
+            return ary[tableSize-1] + (ary[tableSize-1] - ary[tableSize-2]) * (theta_i - M_PI_2) * inv_segment;
         else {
-            float offset = (theta_i_ - M_PI_2) * inv_segment;
+            float offset = (theta_i - M_PI_2) * inv_segment;
             float low = floor(offset);
             float high = ceil(offset);
             if (low == high)
@@ -276,7 +273,7 @@ class dual_scattering_AFC(
     
     float isHemisphere(float hemisphere, theta_i, phi_i, theta_o, phi_o;)
     {
-        // map phi_i from [-PI, PI] to [0, 2*PI]
+        // map $phi_i$ from [-PI, PI] to [0, 2*PI]
         float phi_i_ = phi_i;
         if (phi_i_ >= 0)
             phi_i_ -= M_PI_2;
@@ -286,7 +283,7 @@ class dual_scattering_AFC(
         float cos_theta_i = cos(theta_i);
         vector vi = (-sin(phi_i_)*cos_theta_i, cos(phi_i_)*cos_theta_i, sin(theta_i));
  
-        // map phi_o from [-PI, PI] to [0, 2*PI]
+        // map $phi_o$ from [-PI, PI] to [0, 2*PI]
         float phi_o_ = phi_o;
         if (phi_o_ >= 0)
             phi_o_ -= M_PI_2;
@@ -560,7 +557,21 @@ class dual_scattering_AFC(
     public void construct()
     {   
 
-
+		// color a1 = color(1,2,3);
+		// color a2 = color(2,3,4);
+		// color a3= a1*a2;
+		
+		// color a4 = 4.0;
+		// printf("color%f,%f,%f\n", a3[0],a3[1],a3[2]);
+		// printf("color%f,%f,%f\n", a4[0],a4[1],a4[2]);
+		
+		// vector aa1 = vector(1,2,3);
+		// vector aa2 = vector(4,2,3);
+		// float a5 = aa1.aa2;
+		// printf("%f\n",a5);
+		
+		// color a6 = a1 + 1.0;
+		// printf("color6%f,%f,%f\n", a6[0],a6[1],a6[2]);
         /*average forward/backward attenuation*/
 		printf("begin construct\n");
         reserve(a_f, tableSize);
@@ -657,18 +668,30 @@ class dual_scattering_AFC(
             //estimate the number of hairs in front of the shading point
             hairs_in_front = shadowed * hairs_that_cast_full_shadow;
             //use the number of hairs in front of the shading point to approximate sigma_f
-            sigma_f = hairs_in_front * betaf;
+            sigma_f_squared = hairs_in_front * color_pow(betaf,2);
             //use the number of hairs in front of the shading point to approximate T_f
             T_f = d_f * color_pow(af, hairs_in_front);
 
-
+			//printf("Tf=%f,%f,%f\n",T_f[0],T_f[1],T_f[2]);
             //backscattering for direct and indirect lighting
-            color f_direct_back  =  2 * Ab * color_g( sigmab + beta_back, theta_h - deltab + alpha_back) 
-                                    / (PI * cos(theta) * cos(theta));
+            color f_direct_back;
+				  f_direct_back[0] =  2 * Ab[0] * g(sigmab[0] + beta_back, theta_h - deltab[0] + alpha_back) 
+                                    / ( PI * pow(cos(theta_i), 2) );
+				  f_direct_back[1] =  2 * Ab[1] * g(sigmab[1] + beta_back, theta_h - deltab[1] + alpha_back) 
+                                    / ( PI * pow(cos(theta_i), 2) );
+				  f_direct_back[2] =  2 * Ab[2] * g(sigmab[2] + beta_back, theta_h - deltab[2] + alpha_back) 
+                                    / ( PI * pow(cos(theta_i), 2) );
+									
                   f_direct_back = BackScattering_Color * BackScattering_Intensity * f_direct_back;
 
-            color f_scatter_back = 2 * Ab * color_g( sigmab + sigma_f + beta_back, theta_h - deltab + alpha_back) 
-									/ (PI * cos(theta) * cos(theta));
+            color f_scatter_back;
+			      f_scatter_back[0] = 2 * Ab[0] * g(sigmab[0] + sigma_f_squared[0] + beta_back, theta_h - deltab[0] + alpha_back) 
+									/ ( PI * pow(cos(theta_i), 2) );
+				  f_scatter_back[1] = 2 * Ab[1] * g(sigmab[1] + sigma_f_squared[1] + beta_back, theta_h - deltab[1] + alpha_back) 
+									/ ( PI * pow(cos(theta_i), 2) );
+				  f_scatter_back[2] = 2 * Ab[2] * g(sigmab[2] + sigma_f_squared[2] + beta_back, theta_h - deltab[2] + alpha_back) 
+									/ ( PI * pow(cos(theta_i), 2) );
+									
                   f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
             //single scattering for direct and indirect lighting
@@ -682,10 +705,12 @@ class dual_scattering_AFC(
                   f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 
 
-            color F_direct  = illuminated * ( f_direct_s + f_direct_back );
+            color F_direct  = illuminated * ( f_direct_s + d_b * f_direct_back );
             color F_scatter = (T_f - illuminated) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
-
+	
             //combine the direct and indirect scattering components
+			
+			F_scatter = 0.0;
             Ci  += (F_direct + F_scatter) * cos(theta_i);
         }
 
