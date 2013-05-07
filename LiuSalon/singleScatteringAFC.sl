@@ -18,6 +18,13 @@ class single_scattering_AFC(
 	uniform float Glints_Intensity = 0.8;          //limit 0.5
 	uniform float Glints_AzimuthalShift = 35;      //random per strand[30, 40]
 	uniform float Glints_AzimuthalWidth = 0.3;     //[0,1] eqv to frequency
+	uniform float attenuationFromRoot = 1.0;
+	 
+	uniform float intensityD = 1;
+	uniform float middleD = 0.5;
+	uniform float middleRangeD = 0.1;
+	uniform color colorRootD = color(1, 1, 1);
+	uniform color colorTipD = color(1, 1, 1);
 	)
 {
 	//unit-integral zero-mean Gaussian distribution
@@ -79,6 +86,9 @@ class single_scattering_AFC(
 
     public void surface(output color Ci, Oi;)
     {
+		float mixingRatio = spline(v, 0, middleD, middleD + middleRangeD, 1);
+        color mixedColorD = mix(colorRootD, colorTipD, mixingRatio);
+		
 		// Get unit vectors along local axis in globle coordinate system
 		vector lx  =  normalize(dPdu);
 		vector ly  =  normalize(   N);  //the shading normal
@@ -90,28 +100,12 @@ class single_scattering_AFC(
 		float  theta_o = PI * 0.5 - acos(omega_o[2]);
 
 		color singleScatteringResult = 0;
-        
-        /// TESTING FOR DUAL SCATTERING
-        // P is the shading point position, a function of (u,v)
-        // get the shadow map using P
-        float shadow_bias = 0.005;
-        float shadow_blur = 0.002;
-        float shadow_samples = 9;
-        uniform string shadowmap_path = "";
-        attribute("light:user:delight_shadowmap_name", shadowmap_path);
 
-        float shadow_p = shadow(shadowmap_path, P, "bias", shadow_bias, "samples", shadow_samples, "blur", shadow_blur);
-        //if ( shadow_p != 0.0 )
-        //    printf("non-zero shade is %f", shadow_p);
-        //float p1 = -1;
-       // printf("\n%f", p1);
-        if ( shadow_p > 0.0001 || shadow_p < -0.0001)
-            printf("\nnon-zero shade is %f", shadow_p);
-        // END TESTING
-
+		color diffuseResult = 0;
 		illuminance(P) //P is the shading point position, a function of (u,v)
 		{
-			vector omega_i = GlobalToLocal( normalize(L), lx, ly, lz ); //L is light ray (from shading point to the light source)
+			vector Ln = normalize(L);
+			vector omega_i = GlobalToLocal( Ln, lx, ly, lz ); //L is light ray (from shading point to the light source)
 			float phi_i    = atan(omega_i[1], omega_i[0]);
 			float phi      = abs(phi_o - phi_i); //relative azimuth (within the normal plane)
 
@@ -122,15 +116,21 @@ class single_scattering_AFC(
 			float theta_i = PI * 0.5 - acos(omega_i[2]);
 			float theta   = theta_i + theta_o;
 			float theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
-
+			
+			 float cosTL = max(lz.Ln, 0);
+			 float sinTL = sqrt(1 - cosTL * cosTL);
+			diffuseResult += Cl * intensityD * mixedColorD * sinTL;
+			
 			color f_R   =   R(theta_h, phi);
 			color f_TT  =  TT(theta_h, phi);
 			color f_TRT = TRT(theta_h, phi);
 			singleScatteringResult += ( f_R  + f_TT + f_TRT ) / ( cos(theta) * cos(theta) );
+			
+			 
 		}
 
 		Oi = Os; //Os is the surface opacity
-		Ci = singleScatteringResult * Oi;
+		Ci = (diffuseResult * pow(v, attenuationFromRoot) + singleScatteringResult) * Oi;
 	
     }
 }

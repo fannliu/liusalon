@@ -40,14 +40,14 @@ class dual_scattering_AFC(
     constant float M_1_PI = 1.0 / PI;
     constant float M_2_PI = 2.0 / PI;
     
-    constant float segment = 1.0;
+    constant float segment = 0.1;
     constant float inv_segment = 1 / segment;
     
     constant float tableSize = ceil( PI / segment );
     
     constant float d_b = 0.7;//backward scattering density factor
     constant float d_f = 0.7;//forward scattering density factor
-    
+    constant color integrateFsOverFullSphere;
     
     
     //Defining the uniform parameters used in the pre-computation step
@@ -223,11 +223,11 @@ class dual_scattering_AFC(
         float theta, phi;
         color result = 0.0;
 
-        for(phi = - PI; phi <= PI; phi += segment)
-            for(theta = - M_PI_2; theta <= M_PI_2; theta += segment)
+        for(phi = - PI; phi <= PI; phi += 0.1)
+            for(theta = - M_PI_2; theta <= M_PI_2; theta += 0.1){
                 result  += fs(theta, phi);
-
-        result = result * segment * segment;
+			}
+        result = result * 0.1 * 0.1;
 
         return result;
 
@@ -235,9 +235,9 @@ class dual_scattering_AFC(
 
     color fs_normalized(float theta, phi;)
     {
-        color fs_integral = integrateOverFullSphere();
+        
         color f = fs(theta, phi);
-        return color(f[0]/fs_integral[0], f[1]/fs_integral[1], f[2]/fs_integral[2]);
+        return color(f[0]/integrateFsOverFullSphere[0], f[1]/integrateFsOverFullSphere[1], f[2]/integrateFsOverFullSphere[2]);
     }
     
     
@@ -315,6 +315,7 @@ class dual_scattering_AFC(
         float phi_o, theta_o, phi_i;
 
         float i;
+		float segment_ = 1.0;
        
 		//printf("start of populate_a\n");
         for (i = 0; i < tableSize; i += 1) {
@@ -322,17 +323,17 @@ class dual_scattering_AFC(
             color sum_phi_o = 0.0;
 
             //omega_o decompose to phi_o and theta_O
-            for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
+            for (phi_o = - PI; phi_o <= PI; phi_o += segment_) {
 				//printf("phi_o=%f\n", phi_o);
                 color sum_theta_o = 0.0;
 
-                for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
+                for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment_) {
 					//printf("theta_o=%f\n", theta_o);
                     float theta = theta_i + theta_o;
 
                     color sum_phi_i = 0.0;
                     
-                    for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+                    for (phi_i = - PI; phi_i <= PI; phi_i += segment_) {
 						//printf("phi_i=%f\n", phi_i);
                         if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
                             continue;
@@ -344,16 +345,19 @@ class dual_scattering_AFC(
 
 
                         color fcos = color_abs(fs_normalized(theta, phi)) * cos(theta_i);
+						//printf("i=%f;sum_f=%f,%f,%f\n",i,fcos[0],fcos[1],fcos[2]);
+						
                         sum_phi_i += fcos;
+						
                     }
 
-                    sum_phi_i *= segment;
+                    sum_phi_i *= segment_;
                     sum_theta_o += sum_phi_i;
                 }
-                sum_theta_o *= segment;
+                sum_theta_o *= segment_;
                 sum_phi_o += sum_theta_o;
             }
-            sum_phi_o *= segment;
+            sum_phi_o *= segment_;
 
             push( a, sum_phi_o * M_1_PI );
             theta_i += segment;
@@ -367,17 +371,18 @@ class dual_scattering_AFC(
 
         color sum_phi_o = 0.0;
 
+		float segment_ = 0.5;
 		
-       for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
+       for (phi_o = - PI; phi_o <= PI; phi_o += segment_) {
  
             color sum_theta_o = 0.0;
 
-            for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
+            for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment_) {
                 
                 float theta_h = (theta_i + theta_o) * 0.5;
                 color sum_phi_i = 0.0;
 
-                for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+                for (phi_i = - PI; phi_i <= PI; phi_i += segment_) {
                     if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
                         continue;
 
@@ -390,13 +395,13 @@ class dual_scattering_AFC(
 
                     sum_phi_i  += f;
                 }
-                sum_phi_i  *= segment;
+                sum_phi_i  *= segment_;
                 sum_theta_o += sum_phi_i;
             }
-            sum_theta_o *= segment;
+            sum_theta_o *= segment_;
             sum_phi_o += sum_theta_o;
         }
-        sum_phi_o *= segment;
+        sum_phi_o *= segment_;
  
         return sum_phi_o;
     }
@@ -421,12 +426,13 @@ class dual_scattering_AFC(
 
         
         color sum_phi_o = 0.0;
-        
-        for (phi_o = - PI; phi_o <= PI; phi_o += segment) {
+        float segment_ = 0.5;
+		
+        for (phi_o = - PI; phi_o <= PI; phi_o += segment_) {
  
             color sum_theta_o = 0.0;
 
-            for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment) {
+            for (theta_o = - M_PI_2; theta_o <= M_PI_2; theta_o += segment_) {
                 
                 
                 float theta_h = (theta_i + theta_o) * 0.5;
@@ -434,7 +440,7 @@ class dual_scattering_AFC(
 
                 color sum_phi_i = 0.0;
 
-                for (phi_i = - PI; phi_i <= PI; phi_i += segment) {
+                for (phi_i = - PI; phi_i <= PI; phi_i += segment_) {
                     if (isHemisphere(hemisphere, theta_i, phi_i, theta_o, phi_o) == 0) 
                         continue;
 
@@ -449,13 +455,13 @@ class dual_scattering_AFC(
                     
                     sum_phi_i  += f;
                 }
-                sum_phi_i  *= segment;
+                sum_phi_i  *= segment_;
                 sum_theta_o += sum_phi_i;
             }
-            sum_theta_o *= segment;
+            sum_theta_o *= segment_;
             sum_phi_o += sum_theta_o;
         }
-        sum_phi_o *= segment;
+        sum_phi_o *= segment_;
  
         return sum_phi_o;
 
@@ -556,7 +562,7 @@ class dual_scattering_AFC(
 
     public void construct()
     {   
-
+		integrateFsOverFullSphere = integrateOverFullSphere();
 		// color a1 = color(1,2,3);
 		// color a2 = color(2,3,4);
 		// color a3= a1*a2;
@@ -612,6 +618,20 @@ class dual_scattering_AFC(
         reserve(sigma_b, tableSize);
         populate_sigma_b(sigma_b);      
 		//printf("sigma_b\n");
+		
+		color integral = integrateOverFullSphere();
+		printf("integrate= %f,%f,%f \n", integral[0], integral[1], integral[2] );
+		float i;
+		for (i = 0; i < tableSize; i += 1) {
+		    //color aaa= a_f[i];
+			//color aaa= a_b[i];
+			//color aaa= alpha_f[i];
+			//color aaa= beta_f[i];
+			//color aaa= A_b[i];
+			//color aaa= delta_b[i];
+			color aaa= sigma_b[i];
+			printf("a_f=%f,%f,%f\n",aaa[0],aaa[1],aaa[2]);
+		}
     }
     
     public void surface(output color Ci, Oi;)
@@ -626,7 +646,7 @@ class dual_scattering_AFC(
         float      phi_o = atan(omega_o[1], omega_o[0]);
         float    theta_o = M_PI_2 - acos(omega_o[2]);
         float alpha_back = radians(BackScattering_LongituShift);
-        float  beta_back = radians(BackScattering_LongituWidth);
+        float  beta_back_squared = pow(radians(BackScattering_LongituWidth),2);
 
         // get deep shadow map value
         float shadow_bias = 0.005;
@@ -634,7 +654,7 @@ class dual_scattering_AFC(
         float shadow_samples = 9;
         uniform string shadowmap_path = "";
         attribute("light:user:delight_shadowmap_name", shadowmap_path);
-
+		
         float shadow_p = shadow(shadowmap_path, P, "bias", shadow_bias, "samples", shadow_samples, "blur", shadow_blur);
         
         illuminance(P) //P is the shading point position, a function of (u,v)
@@ -675,42 +695,42 @@ class dual_scattering_AFC(
 			//printf("Tf=%f,%f,%f\n",T_f[0],T_f[1],T_f[2]);
             //backscattering for direct and indirect lighting
             color f_direct_back;
-				  f_direct_back[0] =  2 * Ab[0] * g(sigmab[0] + beta_back, theta_h - deltab[0] + alpha_back) 
-                                    / ( PI * pow(cos(theta_i), 2) );
-				  f_direct_back[1] =  2 * Ab[1] * g(sigmab[1] + beta_back, theta_h - deltab[1] + alpha_back) 
-                                    / ( PI * pow(cos(theta_i), 2) );
-				  f_direct_back[2] =  2 * Ab[2] * g(sigmab[2] + beta_back, theta_h - deltab[2] + alpha_back) 
-                                    / ( PI * pow(cos(theta_i), 2) );
+				  f_direct_back[0] =  2 * Ab[0] * gvar(pow(sigmab[0],2) + beta_back_squared, theta_h - deltab[0] + alpha_back) / ( PI * pow(cos(theta_i), 2) );
+				  f_direct_back[1] =  2 * Ab[1] * gvar(pow(sigmab[1],2) + beta_back_squared, theta_h - deltab[1] + alpha_back) / ( PI * pow(cos(theta_i), 2) );
+				  f_direct_back[2] =  2 * Ab[2] * gvar(pow(sigmab[2],2) + beta_back_squared, theta_h - deltab[2] + alpha_back) / ( PI * pow(cos(theta_i), 2) );
 									
                   f_direct_back = BackScattering_Color * BackScattering_Intensity * f_direct_back;
 
             color f_scatter_back;
-			      f_scatter_back[0] = 2 * Ab[0] * g(sigmab[0] + sigma_f_squared[0] + beta_back, theta_h - deltab[0] + alpha_back) 
-									/ ( PI * pow(cos(theta_i), 2) );
-				  f_scatter_back[1] = 2 * Ab[1] * g(sigmab[1] + sigma_f_squared[1] + beta_back, theta_h - deltab[1] + alpha_back) 
-									/ ( PI * pow(cos(theta_i), 2) );
-				  f_scatter_back[2] = 2 * Ab[2] * g(sigmab[2] + sigma_f_squared[2] + beta_back, theta_h - deltab[2] + alpha_back) 
-									/ ( PI * pow(cos(theta_i), 2) );
+			      f_scatter_back[0] = 2 * Ab[0] * gvar(pow(sigmab[0],2) + sigma_f_squared[0] + beta_back_squared, theta_h - deltab[0] + alpha_back) / ( PI * pow(cos(theta), 2) );
+				  f_scatter_back[1] = 2 * Ab[1] * gvar(pow(sigmab[1],2) + sigma_f_squared[1] + beta_back_squared, theta_h - deltab[1] + alpha_back) / ( PI * pow(cos(theta), 2) );
+				  f_scatter_back[2] = 2 * Ab[2] * gvar(pow(sigmab[2],2) + sigma_f_squared[2] + beta_back_squared, theta_h - deltab[2] + alpha_back) / ( PI * pow(cos(theta), 2) );
 									
                   f_scatter_back = BackScattering_Color * BackScattering_Intensity * f_scatter_back;
 
             //single scattering for direct and indirect lighting
-            color f_direct_s  =  M_R(  theta_h) * N_R(  phi) 
-                              +  M_TT( theta_h) * N_TT( phi) 
-                              +  M_TRT(theta_h) * N_TRT(phi);
+            color f_direct_s  =  fs(theta, phi);
 
             color f_scatter_s = MG_R(  theta_h) * NG_R(  ) 
                               + MG_TT( theta_h) * NG_TT( ) 
                               + MG_TRT(theta_h) * NG_TRT();
+							  
                   f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 
-
+			//f_direct_back = 0.0;
+			//f_scatter_back = 0.0;
+			//f_direct_s = 0.0;
+			//f_scatter_s = 0.0;
             color F_direct  = illuminated * ( f_direct_s + d_b * f_direct_back );
             color F_scatter = (T_f - illuminated) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
-	
-            //combine the direct and indirect scattering components
 			
-			F_scatter = 0.0;
+			
+			// F_direct = illuminated * f_direct_s;
+			// F_scatter = d_f * f_scatter_s;
+			
+			F_direct = d_b * f_direct_back;
+			F_scatter = d_f * PI * d_b * f_scatter_back;
+            //combine the direct and indirect scattering components
             Ci  += (F_direct + F_scatter) * cos(theta_i);
         }
 
