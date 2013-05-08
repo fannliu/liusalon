@@ -1,30 +1,27 @@
 class single_scattering_AFC(
 	uniform color PrimaryHL_Color        = color(0.95,0.85,0.64);
-	uniform float PrimaryHL_Intensity    = 1;
+	uniform float PrimaryHL_Intensity    = 0.4;
 	uniform float PrimaryHL_LongituShift = -4.5;   //[-10, -5]
 	uniform float PrimaryHL_LongituWidth = 2;    //[  5, 10]
 
 	uniform color BacklitRim_Color          = color(0.80,0.67,0.39);
-	uniform float BacklitRim_Intensity      = 0.5; 
+	uniform float BacklitRim_Intensity      = 0.15; 
 	uniform float BacklitRim_LongituShift   = 2.25;   //-PrimaryHL_LongituShift/2
 	uniform float BacklitRim_LongituWidth   = 1;   //PrimaryHL_LongituWidth/2
 	uniform float BacklitRim_AzimuthalWidth = 30;
 
 	uniform color SecondaryHL_Color        = color(0.78,0.61,0.21);
-	uniform float SecondaryHL_Intensity    = 1;
+	uniform float SecondaryHL_Intensity    = 0.3;
 	uniform float SecondaryHL_LongituShift = -4;   //-3*PrimaryHL_LongituShift/2
 	uniform float SecondaryHL_LongituWidth = 4;  //2*PrimaryHL_LongituWidth
 	
-	uniform float Glints_Intensity = 0.8;          //limit 0.5
+	uniform float Glints_Intensity = 0.3;          //limit 0.5
 	uniform float Glints_AzimuthalShift = 35;      //random per strand[30, 40]
 	uniform float Glints_AzimuthalWidth = 0.3;     //[0,1] eqv to frequency
 	uniform float attenuationFromRoot = 1.0;
 	 
-	uniform float intensityD = 1;
-	uniform float middleD = 0.5;
-	uniform float middleRangeD = 0.1;
-	uniform color colorRootD = color(1, 1, 1);
-	uniform color colorTipD = color(1, 1, 1);
+	uniform float Diffuse_Intensity = 0.2;
+	uniform color Diffuse_Color = color(1, 1, 1);
 	)
 {
 	//unit-integral zero-mean Gaussian distribution
@@ -86,9 +83,7 @@ class single_scattering_AFC(
 
     public void surface(output color Ci, Oi;)
     {
-		float mixingRatio = spline(v, 0, middleD, middleD + middleRangeD, 1);
-        color mixedColorD = mix(colorRootD, colorTipD, mixingRatio);
-		
+	
 		// Get unit vectors along local axis in globle coordinate system
 		vector lx  =  normalize(dPdu);
 		vector ly  =  normalize(   N);  //the shading normal
@@ -117,9 +112,10 @@ class single_scattering_AFC(
 			float theta   = theta_i + theta_o;
 			float theta_h = theta * 0.5; //half longitudial angle (wrt the normal plane)
 			
-			 float cosTL = max(lz.Ln, 0);
-			 float sinTL = sqrt(1 - cosTL * cosTL);
-			diffuseResult += Cl * intensityD * mixedColorD * sinTL;
+			
+			float cosTL = clamp(Ln.ly, 0.0, 1.0);
+			float sinTL = sqrt(1 - cosTL * cosTL);
+			diffuseResult += Cl * Diffuse_Intensity * Diffuse_Color * sinTL;
 			
 			color f_R   =   R(theta_h, phi);
 			color f_TT  =  TT(theta_h, phi);

@@ -579,7 +579,7 @@ class dual_scattering_AFC(
 		// color a6 = a1 + 1.0;
 		// printf("color6%f,%f,%f\n", a6[0],a6[1],a6[2]);
         /*average forward/backward attenuation*/
-		printf("begin construct\n");
+		//printf("begin construct\n");
         reserve(a_f, tableSize);
 		//printf("reserve a_f\n");
         
@@ -619,19 +619,19 @@ class dual_scattering_AFC(
         populate_sigma_b(sigma_b);      
 		//printf("sigma_b\n");
 		
-		color integral = integrateOverFullSphere();
-		printf("integrate= %f,%f,%f \n", integral[0], integral[1], integral[2] );
-		float i;
-		for (i = 0; i < tableSize; i += 1) {
-		    //color aaa= a_f[i];
-			//color aaa= a_b[i];
-			//color aaa= alpha_f[i];
-			//color aaa= beta_f[i];
-			//color aaa= A_b[i];
-			//color aaa= delta_b[i];
-			color aaa= sigma_b[i];
-			printf("a_f=%f,%f,%f\n",aaa[0],aaa[1],aaa[2]);
-		}
+		// color integral = integrateOverFullSphere();
+		// printf("integrate= %f,%f,%f \n", integral[0], integral[1], integral[2] );
+		// float i;
+		// for (i = 0; i < tableSize; i += 1) {
+		    // //color aaa= a_f[i];
+			// //color aaa= a_b[i];
+			// //color aaa= alpha_f[i];
+			// //color aaa= beta_f[i];
+			// //color aaa= A_b[i];
+			// //color aaa= delta_b[i];
+			// color aaa= sigma_b[i];
+			// printf("a_f=%f,%f,%f\n",aaa[0],aaa[1],aaa[2]);
+		// }
     }
     
     public void surface(output color Ci, Oi;)
@@ -717,19 +717,12 @@ class dual_scattering_AFC(
 							  
                   f_scatter_s = ForwardScattering_Color * ForwardScattering_Intensity * f_scatter_s;
 
-			//f_direct_back = 0.0;
-			//f_scatter_back = 0.0;
-			//f_direct_s = 0.0;
-			//f_scatter_s = 0.0;
+	
             color F_direct  = illuminated * ( f_direct_s + d_b * f_direct_back );
             color F_scatter = (T_f - illuminated) * d_f * ( f_scatter_s + PI * d_b * f_scatter_back);
 			
 			
-			// F_direct = illuminated * f_direct_s;
-			// F_scatter = d_f * f_scatter_s;
-			
-			F_direct = d_b * f_direct_back;
-			F_scatter = d_f * PI * d_b * f_scatter_back;
+	
             //combine the direct and indirect scattering components
             Ci  += (F_direct + F_scatter) * cos(theta_i);
         }
